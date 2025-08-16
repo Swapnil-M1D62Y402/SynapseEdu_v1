@@ -1,13 +1,29 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect, useRef } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { 
+  Brain, 
+  ChevronRight, 
+  Sparkles,
+  Play,
+  Zap,
+  BookOpen,
+  Users,
+  TrendingUp,
+  Award 
+} from "lucide-react"
+import Header from "@/components/Header";
+import HeroSection from "@/components/HeroSection";
+import FeaturesSection from "@/components/FeaturesSection";
+import Footer from "@/components/Footer";
+import hero_phone_image from "@/public/hero_phone_image.png";
+import hero_laptop_image from "@/public/hero-laptop-mockup.png";
 import Image from "next/image"
-import { Brain, Sparkles, Zap, BookOpen, Users, TrendingUp, Play, ChevronRight, Award } from "lucide-react"
+
 
 // Particle system component
 const ParticleSystem = () => {
@@ -274,37 +290,37 @@ export default function LandingPage() {
           transform: "scale(1)",
         }}
       />
-
+      <Header />
       {/* Hero Section */}
       <div className="container mx-auto px-6 py-12 flex items-center min-h-screen relative z-10">
-        <div className="flex flex-col lg:flex-row items-center justify-between w-full gap-12">
+        
+        <div className="flex flex-col lg:flex-row items-center justify-between w-full gap-12 mt-10">
           {/* Left Content */}
           <div className="lg:w-1/2 text-white space-y-8">
             <div className="space-y-4">
-              <Badge className="bg-white/10 text-purple-200 border-white/20 backdrop-blur-sm">
+              {/* <Badge className="bg-white/10 text-purple-200 border-white/20 backdrop-blur-sm">
                 <Sparkles className="w-4 h-4 mr-2" />
                 AI-Powered Learning Platform
-              </Badge>
+              </Badge> */}
 
-              <h1 className="text-6xl lg:text-8xl font-bold leading-tight bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              <h1 className="text-6xl lg:text-8xl font-bold leading-tight bg-gradient-to-r from-white to-purple-400 bg-clip-text text-transparent">
                 SynapseEdu
               </h1>
 
               <h2 className="text-4xl lg:text-6xl font-semibold leading-tight">
-                The smartest
+                Education  
                 <br />
                 <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                  path to
+                  Without Any Barriers
                 </span>
                 <br />
                 <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                  Knowledge.
+                  Shape a Sustainable Tomorrow.
                 </span>
               </h2>
 
               <p className="text-xl text-purple-200 max-w-md leading-relaxed">
-                Revolutionizing education with AI-powered personalized learning, interactive mind maps, and intelligent
-                study planning.
+                Our app democratizes learning by turning raw information into personalized, accessible knowledge—directly advancing SDG 4’s mission of inclusive, equitable, and lifelong education for all.
               </p>
             </div>
 
@@ -325,7 +341,7 @@ export default function LandingPage() {
                   setIsLogin(true)
                 }}
                 variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 px-8 py-4 rounded-full text-lg font-medium backdrop-blur-sm transition-all duration-300"
+                className="border-white/30 text-blue-700 hover:bg-white/10 px-8 py-4 rounded-full text-lg font-medium backdrop-blur-sm transition-all duration-300"
               >
                 LOGIN
               </Button>
@@ -350,12 +366,35 @@ export default function LandingPage() {
 
           {/* Right Content - Enhanced Interactive Elements */}
           <div className="lg:w-1/2 relative h-96 lg:h-[700px] mt-12 lg:mt-0">
-            {/* AI Chat Demo */}
+            <div className="relative animate-slide-up" style={{ animationDelay: "0.3s" }}>
+            {/* Phone Mockup */}
+            <div className="relative z-10 animate-float">
+              <Image
+                src={hero_phone_image} 
+                alt="SynapseEdu Mobile App" 
+                className="w-80 h-auto mx-auto rounded-3xl shadow-2xl"
+              />
+            </div>
+
+            {/* Laptop Mockup - Background */}
+            <div className="absolute -top-8 -right-8 opacity-60 animate-float" style={{ animationDelay: "1s" }}>
+              <Image
+                src={hero_laptop_image} 
+                alt="SynapseEdu Desktop" 
+                className="w-64 h-auto rounded-lg shadow-xl"
+              />
+            </div>
+
+            {/* Decorative Elements */}
+            <div className="absolute -top-4 -left-4 w-20 h-20 bg-primary/20 rounded-full blur-xl animate-pulse"></div>
+            <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-accent/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: "1s" }}></div>
+          </div>
+            {/*             
             <div className="absolute top-0 right-0 w-80 z-20">
               <AIChatDemo />
             </div>
 
-            {/* Floating Student Cards with Advanced Animations */}
+            
             <div className="absolute top-20 left-8 w-32 h-32 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-full overflow-hidden shadow-2xl transform hover:scale-110 transition-all duration-500 animate-float group">
               <Image
                 src="/images/student1.jpeg"
@@ -413,9 +452,9 @@ export default function LandingPage() {
                 height={160}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
-            </div>
+            </div> */}
 
-            {/* Floating Feature Cards */}
+            
             <div className="absolute bottom-0 right-0 bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-5 h-5 text-yellow-400" />
@@ -424,19 +463,20 @@ export default function LandingPage() {
               <div className="text-purple-200 text-xs">Track your progress with AI insights</div>
             </div>
 
-            <div className="absolute top-60 left-20 bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
+            {/* <div className="absolute top-60 left-20 bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
               <div className="flex items-center gap-2 mb-2">
                 <BookOpen className="w-5 h-5 text-blue-400" />
                 <span className="text-white font-medium text-sm">Mind Maps</span>
-              </div>
+              </div> 
               <div className="text-purple-200 text-xs">Visual learning made simple</div>
-            </div>
+            </div> */}
           </div>
         </div>
-      </div>
+      </div>  
 
       {/* Features Section */}
-      <div className="relative z-10 py-20 bg-black/20 backdrop-blur-sm">
+      <FeaturesSection />
+      {/* <div className="relative z-10 py-20 bg-black/20 backdrop-blur-sm">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h3 className="text-4xl font-bold text-white mb-4">Why Choose SynapseEdu?</h3>
@@ -446,32 +486,31 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: Brain,
-                title: "AI-Powered",
-                desc: "Personalized learning paths",
-                color: "from-purple-500 to-pink-500",
-              },
-              {
-                icon: Users,
-                title: "Collaborative",
-                desc: "Study with peers globally",
-                color: "from-blue-500 to-cyan-500",
-              },
-              {
-                icon: TrendingUp,
-                title: "Analytics",
-                desc: "Track your progress",
-                color: "from-green-500 to-emerald-500",
-              },
-              {
-                icon: Award,
-                title: "Certified",
-                desc: "Earn recognized certificates",
-                color: "from-yellow-500 to-orange-500",
-              },
-            ].map((feature, idx) => (
+            {{
+              icon: Brain,
+              title: "AI-Powered",
+              desc: "Personalized learning paths",
+              color: "from-purple-500 to-pink-500",
+            },
+            {
+              icon: Users,
+              title: "Collaborative",
+              desc: "Study with peers globally",
+              color: "from-blue-500 to-cyan-500",
+            },
+            {
+              icon: TrendingUp,
+              title: "Analytics",
+              desc: "Track your progress",
+              color: "from-green-500 to-emerald-500",
+            },
+            {
+              icon: Award,
+              title: "Certified",
+              desc: "Earn recognized certificates",
+              color: "from-yellow-500 to-orange-500",
+            },
+          }.map((feature, idx) => (
               <Card
                 key={idx}
                 className="bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 group"
@@ -489,14 +528,14 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* CTA Section */}
-      <div className="relative z-10 py-20">
-        <div className="container mx-auto px-6 text-center">
+      <div className="relative z-10 py-20 bg-blue-200">
+        <div className="container mx-auto px-6 text-center ">
           <div className="max-w-4xl mx-auto">
-            <h3 className="text-5xl font-bold text-white mb-6">Ready to Transform Your Learning?</h3>
-            <p className="text-xl text-purple-200 mb-8 max-w-2xl mx-auto">
+            <h3 className="text-5xl font-bold text-blue-400 mb-6">Ready to Transform Your Learning?</h3>
+            <p className="text-xl text-purple-400 mb-8 max-w-2xl mx-auto">
               Join thousands of students who are already experiencing the future of education
             </p>
             <Button
@@ -513,6 +552,7 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }
