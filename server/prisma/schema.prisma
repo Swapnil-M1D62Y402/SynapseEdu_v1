@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserType {
+  YOUTH
+  TRUSTED_CONTACT
+  CONSULTANT
+  FIRST_RESPONDER
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  username  String     @unique
+  password  String
+  userType  UserType   @default(YOUTH)
+  locations Location[]
+  comments Comment[]
+  trustedEmail String?
+  notifications Notification[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  sosMessagesAsFirstResponder SosMessage[] @relation("FirstResponderSOS")
+  sosMessagesAsYouth          SosMessage[] @relation("YouthSOS")
+  consultantProfile ConsultantProfile?
+  userAppointments  Appointment[]     @relation("UserAppointments")
+}
+
+// changes made
+model Location {
+  id        String   @id @default(uuid())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+  sosMessages SosMessage[]
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  isAnonymous Boolean @default(false)
+  userId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String   @db.Text
+  type      String   // e.g., 'SOS', 'ALERT', 'INFO'
+  isRead    Boolean  @default(false)
+  location  Json?    // Store latitude and longitude
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+
+model SosMessage {
+  id               Int      @id @default(autoincrement())
+  message          String
+  createdAt        DateTime @default(now())
+  firstResponderId Int
+  youthId          Int
+  locationId       String
+
+  firstResponder   User     @relation("FirstResponderSOS", fields: [firstResponderId], references: [id])
+  youth            User     @relation("YouthSOS", fields: [youthId], references: [id])
+  location         Location @relation(fields: [locationId], references: [id])
+}
+
+model ConsultantProfile {
+  id          Int          @id @default(autoincrement())
+  userId      Int          @unique
+  user        User         @relation(fields: [userId], references: [id])
+  specialty   String
+  experience  Int          @default(0)
+  available   Boolean      @default(true)
+  appointments Appointment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Appointment {
+  id          Int              @id @default(autoincrement())
+  userId      Int              // user booking the appointment
+  user        User             @relation("UserAppointments", fields: [userId], references: [id])
+  consultantId Int             // consultant being booked
+  consultant  ConsultantProfile @relation(fields: [consultantId], references: [id])
+  date        DateTime
+  time        String
+  status      String           @default("pending") // pending, confirmed, cancelled
+  createdAt   DateTime         @default(now())
+}
