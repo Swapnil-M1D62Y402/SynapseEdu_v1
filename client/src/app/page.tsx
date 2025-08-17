@@ -532,7 +532,8 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <div className="relative z-10 py-20 bg-blue-200">
-        <div className="container mx-auto px-6 text-center ">
+        <ParticleSystem />
+        <div className="container mx-auto px-6 text-center z-10">
           <div className="max-w-4xl mx-auto">
             <h3 className="text-5xl font-bold text-blue-400 mb-6">Ready to Transform Your Learning?</h3>
             <p className="text-xl text-purple-400 mb-8 max-w-2xl mx-auto">
@@ -552,7 +553,10 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-      <Footer />
+      <div className="z-10">
+        <Footer />
+      </div>
+      
     </div>
   )
 }

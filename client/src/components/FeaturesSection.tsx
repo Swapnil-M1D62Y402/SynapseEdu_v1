@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import heroLaptopUrl from "@/public/hero-laptop-mockup.png";
 import Image from "next/image";
+import ParticleSystem from "@/components/ParticleSystem";
 
 export default function FeaturesSection(){
   return (
-    <section className="py-20 bg-gradient-to-b from-purple-900 to-blue-200">
+    <section className="py-20 bg-gradient-to-b from-purple-800 to-blue-200">
+      <ParticleSystem />
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Content - Device Mockup */}
@@ -13,7 +15,7 @@ export default function FeaturesSection(){
             <Image 
             src={heroLaptopUrl} 
             alt="SynapseEdu Desktop Dashboard" 
-            className="w-full h-auto rounded-xl shadow-2xl"/>
+            className="w-full h-auto rounded-xl shadow-2xl z-10"/>
               
               {/* Floating Feature Cards */}
               <div className="absolute -top-4 -right-4 bg-white rounded-lg shadow-lg p-3 animate-float">
@@ -33,7 +35,7 @@ export default function FeaturesSection(){
           </div>
 
           {/* Right Content */}
-          <div className="order-1 lg:order-2 space-y-8 animate-fade-in">
+          <div className="order-1 lg:order-2 space-y-8 animate-fade-in z-10">
             <div className="space-y-6">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
                 <span className="text-gradient">Reduce stress</span> and save time with SynapseEdu—create a <span className="text-gradient">free account</span> and get started!
