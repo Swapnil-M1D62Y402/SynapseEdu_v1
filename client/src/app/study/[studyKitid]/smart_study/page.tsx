@@ -1,9 +1,10 @@
+import SmartStudy from '@/components/SmartStudy'
 import React from 'react'
 
 const page = () => {
   return (
     <div>
-      Smart Study MCQs
+      <SmartStudy />
     </div>
   )
 }

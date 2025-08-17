@@ -84,7 +84,7 @@ export default function StudyKitClientLayout({ studyKitId, children }: Props) {
                 : "hover:bg-blue-200"
             }`}
           >
-            SmartStudy
+            Smart Study
           </Link>
           <Link
             href={`${base}/study_guide`}
