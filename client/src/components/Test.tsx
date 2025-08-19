@@ -484,31 +484,34 @@ function TestDashboard({ goRun, goReview }: any) {
 }
 
 // Test Runner Component
+// Test Runner Component
 function TestRunner({ testId, goBack, goReview }: any) {
   const [tests, setTests] = useState(loadTests());
   const test = tests.find((t: any) => t.id === testId);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [tick, setTick] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!test) return;
-    timerRef.current = setInterval(() => setTick(x => x + 1), 1000);
+    timerRef.current = window.setInterval(() => setTick((x) => x + 1), 1000);
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) window.clearInterval(timerRef.current);
     };
   }, [test]);
 
   if (!test) return null;
 
   function update(patch: any) {
-    const newTests = tests.map((t: any) => t.id === testId ? { ...t, ...patch } : t);
+    const newTests = tests.map((t: any) => (t.id === testId ? { ...t, ...patch } : t));
     setTests(newTests);
     saveTests(newTests);
   }
 
   function select(qid: string, key: string) {
-    update({ responses: { ...test.responses, [qid]: key } });
+    const newResponses = { ...test.responses, [qid]: key };
+    update({ responses: newResponses });
   }
 
   function handleSubmit() {
@@ -518,7 +521,7 @@ function TestRunner({ testId, goBack, goReview }: any) {
       return acc + (picked === q.correctOption ? POINTS_PER_Q : 0);
     }, 0);
     const pct = Math.round((100 * earned) / total);
-    
+
     update({
       status: "completed",
       completedAt: Date.now(),
@@ -527,6 +530,9 @@ function TestRunner({ testId, goBack, goReview }: any) {
     goReview(testId);
   }
 
+  const q = test.questions[currentIndex];
+  const selected = test.responses[q.id];
+
   const elapsedSec = Math.floor((Date.now() - test.startedAt) / 1000);
   const totalSec = test.duration * 60;
   const remain = Math.max(0, totalSec - elapsedSec);
@@ -534,19 +540,20 @@ function TestRunner({ testId, goBack, goReview }: any) {
     ? `${Math.floor(remain / 60)}:${String(remain % 60).padStart(2, "0")}`
     : `${Math.floor(elapsedSec / 60)}:${String(elapsedSec % 60).padStart(2, "0")}`;
 
-  // Auto-submit on timeout
   useEffect(() => {
     if (test.enforce && remain <= 0) {
       handleSubmit();
     }
   }, [tick]);
 
+  const percentDone = Math.floor(((currentIndex + 1) / test.questions.length) * 100);
+
   return (
     <div className="h-[calc(100vh-theme(spacing.navbar))] mt-navbar ml-sidebar overflow-auto">
-      {/* Test Navigation */}
+      {/* Top nav */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur border-b mb-6">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button 
+          <button
             onClick={() => {
               update({ status: "paused" });
               goBack();
@@ -558,57 +565,84 @@ function TestRunner({ testId, goBack, goReview }: any) {
           <div className="font-semibold">
             {test.enforce ? "Time left" : "Time elapsed"}: {timeText}
           </div>
-          <Button onClick={() => setShowConfirm(true)}>
-            I'm Done
-          </Button>
+          <Button onClick={() => setShowConfirm(true)}>I'm Done</Button>
         </div>
       </div>
 
+      {/* QUESTION CARD */}
       <div className="max-w-6xl mx-auto px-6 space-y-6">
-        {test.questions.map((q: any, idx: number) => {
-          const selected = test.responses[q.id];
-          return (
-            <Card key={q.id} className="shadow-soft">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-muted-foreground">
-                    {idx + 1} / {test.questions.length} — {POINTS_PER_Q} points
-                  </span>
-                </div>
-                <h3 className="text-xl font-semibold mb-4">{q.question}</h3>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  {q.choices.map((choice: any) => {
-                    const isSelected = selected === choice.key;
-                    return (
-                      <button
-                        key={choice.key}
-                        onClick={() => select(q.id, choice.key)}
-                        className={`text-left p-4 rounded-lg border transition-colors ${
-                          isSelected 
-                            ? "bg-primary text-primary-foreground border-primary" 
-                            : "bg-card hover:bg-muted border-border"
+        <Card key={q.id} className="shadow-soft">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm text-muted-foreground">
+                {currentIndex + 1} / {test.questions.length} — {POINTS_PER_Q} points
+              </span>
+            </div>
+            <h3 className="text-xl font-semibold mb-4">{q.question}</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {q.choices.map((choice: any) => {
+                const isSelected = selected === choice.key;
+                return (
+                  <button
+                    key={choice.key}
+                    onClick={() => select(q.id, choice.key)}
+                    className={`text-left p-4 rounded-lg border transition-colors ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-muted border-border"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm font-medium ${
+                          isSelected ? "bg-background/20 border-background/30" : "bg-background"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm font-medium ${
-                            isSelected ? "bg-background/20 border-background/30" : "bg-background"
-                          }`}>
-                            {choice.key}
-                          </span>
-                          <span>{choice.text}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                        {choice.key}
+                      </span>
+                      <span>{choice.text}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Navigation buttons */}
+        <div className="flex justify-between">
+          <Button
+            variant="secondary"
+            disabled={currentIndex === 0}
+            onClick={() => setCurrentIndex((i) => i - 1)}
+          >
+            Previous
+          </Button>
+
+          {currentIndex < test.questions.length - 1 ? (
+            <Button
+              disabled={!selected}
+              onClick={() => setCurrentIndex((i) => i + 1)}
+            >
+              Next
+            </Button>
+          ) : (
+            <Button disabled={!selected} onClick={handleSubmit}>
+              Submit Test
+            </Button>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full bg-muted rounded-full h-2 mt-4">
+          <div
+            className="h-2 bg-primary rounded-full transition-all duration-300"
+            style={{ width: `${percentDone}%` }}
+          />
+        </div>
       </div>
 
-      {/* Confirm Modal */}
+      {/* submit confirm modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
@@ -621,9 +655,7 @@ function TestRunner({ testId, goBack, goReview }: any) {
                 <Button variant="outline" onClick={() => setShowConfirm(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSubmit}>
-                  Submit
-                </Button>
+                <Button onClick={handleSubmit}>Submit</Button>
               </div>
             </CardContent>
           </Card>
@@ -634,105 +666,127 @@ function TestRunner({ testId, goBack, goReview }: any) {
 }
 
 // Test Review Component
+// Test Review Component (step-by-step by question)
 function TestReview({ testId, goBack }: any) {
   const [tests] = useState(loadTests());
   const test = tests.find((t: any) => t.id === testId);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!test) return null;
+
+  const q = test.questions[currentIndex];
+  const picked = test.responses[q.id];
+  const correct = q.correctOption;
+  const isCorrect = picked === correct;
+  const pointsEarned = isCorrect ? POINTS_PER_Q : 0;
+  const percentDone = Math.floor(((currentIndex + 1) / test.questions.length) * 100);
 
   return (
     <div className="h-[calc(100vh-theme(spacing.navbar))] mt-navbar ml-sidebar overflow-auto">
       {/* Review Navigation */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur border-b mb-6">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button 
-            onClick={goBack}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            ← Test settings
+          <button onClick={goBack} className="text-muted-foreground hover:text-foreground">
+            ← Back to dashboard
           </button>
           <div />
           <div className="font-semibold">Score: {test.scorePct}%</div>
         </div>
       </div>
 
+      {/* Question card */}
       <div className="max-w-6xl mx-auto px-6 space-y-6">
-        {test.questions.map((q: any, idx: number) => {
-          const picked = test.responses[q.id];
-          const correct = q.correctOption;
-          const isCorrect = picked === correct;
-          const pointsEarned = isCorrect ? POINTS_PER_Q : 0;
+        <Card className="shadow-soft">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-2">
+              {isCorrect ? (
+                <Check className="w-5 h-5 text-green-600" />
+              ) : (
+                <X className="w-5 h-5 text-red-600" />
+              )}
+              <span className="text-sm text-muted-foreground">
+                {currentIndex + 1} / {test.questions.length} — {POINTS_PER_Q} points
+              </span>
+            </div>
+            <div className={`text-sm mb-3 ${isCorrect ? "text-green-600" : "text-red-600"}`}>
+              {pointsEarned} points earned
+            </div>
 
-          return (
-            <Card key={q.id} className="shadow-soft">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  {isCorrect ? (
-                    <Check className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <X className="w-5 h-5 text-red-600" />
-                  )}
-                  <span className="text-sm text-muted-foreground">
-                    {idx + 1} / {test.questions.length} — {POINTS_PER_Q} points
-                  </span>
-                </div>
-                
-                <div className={`text-sm mb-3 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                  {pointsEarned} points earned
-                </div>
+            <h3 className="text-xl font-semibold mb-4">{q.question}</h3>
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              {q.choices.map((choice: any) => {
+                const isUserChoice = picked === choice.key;
+                const isCorrectChoice = choice.key === correct;
 
-                <h3 className="text-xl font-semibold mb-4">{q.question}</h3>
+                let className = "p-4 rounded-lg border ";
+                if (isCorrectChoice) {
+                  className += "bg-green-50 border-green-500 text-green-900";
+                } else if (isUserChoice && !isCorrectChoice) {
+                  className += "bg-red-50 border-red-500 text-red-900";
+                } else {
+                  className += "bg-muted/50 border-border";
+                }
 
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  {q.choices.map((choice: any) => {
-                    const isUserChoice = picked === choice.key;
-                    const isCorrectChoice = choice.key === correct;
-                    
-                    let className = "p-4 rounded-lg border ";
-                    if (isCorrectChoice) {
-                      className += "bg-green-50 border-green-500 text-green-900";
-                    } else if (isUserChoice && !isCorrectChoice) {
-                      className += "bg-red-50 border-red-500 text-red-900";
-                    } else {
-                      className += "bg-muted/50 border-border";
-                    }
+                return (
+                  <div key={choice.key} className={className}>
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full border bg-background flex items-center justify-center text-sm font-medium">
+                        {choice.key}
+                      </span>
+                      <span>{choice.text}</span>
+                      {isCorrectChoice && <Check className="w-5 h-5 ml-auto" />}
+                      {isUserChoice && !isCorrectChoice && <X className="w-5 h-5 ml-auto" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-                    return (
-                      <div key={choice.key} className={className}>
-                        <div className="flex items-center gap-3">
-                          <span className="w-8 h-8 rounded-full border bg-background flex items-center justify-center text-sm font-medium">
-                            {choice.key}
-                          </span>
-                          <span>{choice.text}</span>
-                          {isCorrectChoice && <Check className="w-5 h-5 ml-auto" />}
-                          {isUserChoice && !isCorrectChoice && <X className="w-5 h-5 ml-auto" />}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* Explanation */}
+            <div className="rounded-lg bg-muted/50 p-4">
+              <div className="font-medium mb-2">Explanation</div>
+              {Array.isArray(q.explanation) ? (
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  {q.explanation.map((line: string, i: number) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">{q.explanation}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-                {/* Explanation */}
-                <div className="rounded-lg bg-muted/50 p-4">
-                  <div className="font-medium mb-2">Explanation</div>
-                  {Array.isArray(q.explanation) ? (
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      {q.explanation.map((line: string, i: number) => (
-                        <li key={i}>{line}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">{q.explanation}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {/* Pagination buttons */}
+        <div className="flex justify-between">
+          <Button
+            variant="secondary"
+            disabled={currentIndex === 0}
+            onClick={() => setCurrentIndex((i) => i - 1)}
+          >
+            Previous
+          </Button>
+
+          {currentIndex < test.questions.length - 1 ? (
+            <Button onClick={() => setCurrentIndex((i) => i + 1)}>Next</Button>
+          ) : (
+            <Button onClick={goBack}>Finish Review</Button>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full bg-muted rounded-full h-2 mt-4">
+          <div
+            className="h-2 bg-primary rounded-full transition-all duration-300"
+            style={{ width: `${percentDone}%` }}
+          />
+        </div>
       </div>
     </div>
   );
 }
+
 
 // Main Test Component
 export default function Test() {

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Send, MessageCircle, User, Sun, Moon, Bell, Award, LogOut, Calendar } from "lucide-react";
+import { Send, MessageCircle, User, Sun, Moon, Bell, Award, LogOut, Calendar, Hourglass } from "lucide-react";
 import synapseLogoUrl from "@/public/synapseedu_logo.jpeg";
 import Image from "next/image";
 import {
@@ -12,9 +12,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import Pomodoro from "./Pomodoro";
+import { useState } from "react";
 
 export default function Navbar() {
   const { setTheme, theme } = useTheme();
+  const [setTimer, setShowTimer] = useState(false);
 
   return (
     <header className="bg-purple-100 border-b border-border z-10">
@@ -37,6 +40,11 @@ export default function Navbar() {
             <MessageCircle className="h-4 w-4 mr-2" />
             Feedback
           </Button>
+          <Button onClick={() => setShowTimer(true) } variant="outline" size="sm" className="hidden sm:flex" >
+            <Hourglass className="h-4 w-4 mr-2" />
+            Pomodoro
+          </Button>
+          {setTimer && <Pomodoro onClose={() => setShowTimer(false)}/>}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

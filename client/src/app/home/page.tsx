@@ -56,12 +56,22 @@ const Index = () => {
     //const newKitId = Date.now().toString();       // THIS UNQIUE ID IS EXPERIMENTAL, LATER WE MIGHT USE A UUID LIBRARY
     const newKitId = `kit_${uuidv4()}`;
     const newKit: StudyKit = {
-      id: Date.now().toString(),
+      id: newKitId,
       title: "New Study Kit",
       category: "Unclassified",
       color: "blue"
     };
     setStudyKits([...studyKits, newKit]);
+
+    // Persist canonical id to localStorage so layouts can pick it up quickly
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("studyKitId", newKitId);
+      }
+    } catch (err) {
+      console.warn("localStorage unavailable:", err);
+    }
+
     router.push(`/study/${newKitId}`);
   };
 

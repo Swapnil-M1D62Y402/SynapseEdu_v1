@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import synapseLogoUrl from "@/public/synapseedu_logo.jpeg"; // Adjust the path as necessary
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Header(){
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -42,10 +43,14 @@ export default function Header(){
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-4">
           <Button variant="outline" size="sm">
+            <Link href="/login">
             Sign In
+            </Link>
           </Button>
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/signup">
             Get Started
+            </Link>
           </Button>
         </div>
 
