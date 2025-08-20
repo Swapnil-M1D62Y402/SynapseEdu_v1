@@ -1,11 +1,12 @@
+import {Flashcards} from '@/components/Flashcard'
 import React from 'react'
 
-const page = () => {
+const flashcardPage = () => {
   return (
     <div>
-      FlashCard
+      <Flashcards />
     </div>
   )
 }
 
-export default page
+export default flashcardPage
