@@ -1,110 +1,99 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// schema.prisma
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Supabase Postgres
+  directUrl = env("DIRECT_URL") // For migrations
+}
 
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
-
-enum UserType {
-  YOUTH
-  TRUSTED_CONTACT
-  CONSULTANT
-  FIRST_RESPONDER
-}
-
 model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  username  String     @unique
-  password  String
-  userType  UserType   @default(YOUTH)
-  locations Location[]
-  comments Comment[]
-  trustedEmail String?
-  notifications Notification[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  sosMessagesAsFirstResponder SosMessage[] @relation("FirstResponderSOS")
-  sosMessagesAsYouth          SosMessage[] @relation("YouthSOS")
-  consultantProfile ConsultantProfile?
-  userAppointments  Appointment[]     @relation("UserAppointments")
+  id          String      @id @default(cuid())
+  email       String      @unique
+  name        String?
+  password    String
+  createdAt   DateTime    @default(now())
+
+  studyKits   StudyKit[]
 }
 
-// changes made
-model Location {
-  id        String   @id @default(uuid())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  latitude  Float
-  longitude Float
-  createdAt DateTime @default(now())
-  sosMessages SosMessage[]
+model StudyKit {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+
+  title      String
+  description String?
+
+  createdAt  DateTime  @default(now())
+
+  sources    Source[]
+  flashcards FlashCard[]
+  mcqs       Smart_Study_MCQ[]
+  tests      Test[]
 }
 
-model Comment {
-  id        Int      @id @default(autoincrement())
-  content   String   @db.Text
-  isAnonymous Boolean @default(false)
-  userId    Int
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+model Source {
+  id           String   @id @default(cuid())
+  studyKitId   String
+  studyKit     StudyKit @relation(fields: [studyKitId], references: [id])
+
+  fileUrl      String   // Supabase public URL
+  fileName     String   // Original filename
+  fileType     String   // pdf, docx, txt, csv
+  fileSize     Int?     // size in bytes
+  storagePath  String   // Supabase Storage path (bucket/key)
+
+  processed    Boolean  @default(false) // whether embedded
+  loaderUsed   String?  // which LangChain loader was used
+
+  addedAt      DateTime @default(now())
 }
 
-model Notification {
-  id        Int      @id @default(autoincrement())
+model FlashCard {
+  id         String    @id @default(cuid())
+  studyKitId String
+  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
+
+  question   String
+  answer     String
+}
+
+model Smart_Study_MCQ {
+  id         String    @id @default(cuid())
+  studyKitId String
+  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
+
+  question   String
+  options    String[]  // multiple-choice options
+  answer     String    // correct answer
+  explanation String?
+}
+
+model Test {
+  id        String        @id @default(cuid())
+  studyKitId String
+  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
+
   title     String
-  message   String   @db.Text
-  type      String   // e.g., 'SOS', 'ALERT', 'INFO'
-  isRead    Boolean  @default(false)
-  location  Json?    // Store latitude and longitude
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
+  history   Test_History[]
 }
 
+model Test_History {
+  id          String   @id @default(cuid())
+  testId      String
+  test        Test     @relation(fields: [testId], references: [id])
 
-model SosMessage {
-  id               Int      @id @default(autoincrement())
-  message          String
-  createdAt        DateTime @default(now())
-  firstResponderId Int
-  youthId          Int
-  locationId       String
+  testNo      Int     // Unique test number
+  difficulty  String
+  duration    Int      // in minutes/seconds
+  score       Int
+  userAnswers Json     // stores answers in JSON
 
-  firstResponder   User     @relation("FirstResponderSOS", fields: [firstResponderId], references: [id])
-  youth            User     @relation("YouthSOS", fields: [youthId], references: [id])
-  location         Location @relation(fields: [locationId], references: [id])
-}
-
-model ConsultantProfile {
-  id          Int          @id @default(autoincrement())
-  userId      Int          @unique
-  user        User         @relation(fields: [userId], references: [id])
-  specialty   String
-  experience  Int          @default(0)
-  available   Boolean      @default(true)
-  appointments Appointment[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-}
-
-model Appointment {
-  id          Int              @id @default(autoincrement())
-  userId      Int              // user booking the appointment
-  user        User             @relation("UserAppointments", fields: [userId], references: [id])
-  consultantId Int             // consultant being booked
-  consultant  ConsultantProfile @relation(fields: [consultantId], references: [id])
-  date        DateTime
-  time        String
-  status      String           @default("pending") // pending, confirmed, cancelled
-  createdAt   DateTime         @default(now())
+  takenAt     DateTime @default(now())
+  @@unique([testId, testNo])
 }

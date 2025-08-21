@@ -52,7 +52,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/sos", sosRoute);
-app.use("/api/trustedemail", trustemailRoute)
+app.use("/api/trustedemail", trustemailRoute);
 app.use("/api/consultants", consultantRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/first-responder", firstResponderRoute);
