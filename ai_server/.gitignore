@@ -1,1 +1,5 @@
+# Node modules
+.venv/
+
+# Environment variables
 .env
