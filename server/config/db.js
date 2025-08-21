@@ -1,20 +1,17 @@
-import { PrismaClient }  from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
-// Add Prisma to Node.js global object to prevent multiple instances
-// (useful during development when files get hot-reloaded)
-if (process.env.NODE_ENV === 'development') {
-  global.prisma = global.prisma || new PrismaClient()
+// Avoid multiple instances in dev
+if (!global.prisma) {
+  global.prisma = new PrismaClient()
 }
 
-const prisma = global.prisma || new PrismaClient()
+const prisma = global.prisma
 
-// Optional: Add middleware for logging queries
-prisma.$use(async (params, next) => {
-  const before = Date.now()
-  const result = await next(params)
-  const after = Date.now()
-  console.log(`Query ${params.model}.${params.action} took ${after - before}ms`)
-  return result
+// Add logging
+prisma.$on('query', (e) => {
+  console.log(`Query: ${e.query}`)
+  console.log(`Params: ${e.params}`)
+  console.log(`Duration: ${e.duration}ms`)
 })
 
 // Handle clean shutdown

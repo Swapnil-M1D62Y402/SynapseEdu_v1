@@ -1,133 +1,113 @@
-// schema.prisma
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL") // Supabase Postgres
-  directUrl = env("DIRECT_URL") // For migrations
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id          String      @id @default(cuid())
-  email       String      @unique
-  name        String?
-  password    String
-  createdAt   DateTime    @default(now())
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
 
-  studyKits   StudyKit[]
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String?
+  password  String
+  createdAt DateTime   @default(now())
+  studyKits StudyKit[]
 }
 
 model StudyKit {
-  id                  String      @id @default(uuid())
-  name                String
-  lastAccessed        DateTime    @default(now())   // initial creation time
-  masteryPercentage   Float       @default(0.0)     // 0 until user starts
-  streak              Int         @default(0)       // no streak yet
-  kpiScore            Float       @default(0.0)     // neutral baseline
-  attentionSpan       Float       @default(0.0)     // avg minutes/session
-  studyGuideSummary   String      @db.Text          // long text for summaries
-
-  userId              String
-  user                User        @relation(fields: [userId], references: [id])
-  
-  // Relations
-  todos               ToDo[]
-  sources             Source[]
-  mcqs                Smart_Study_MCQ[]
-  flashcards          FlashCard[]
-  tests               Test[]
-
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  id                String            @id @default(uuid())
+  userId            String
+  createdAt         DateTime          @default(now())
+  attentionSpan     Float             @default(0.0)
+  kpiScore          Float             @default(0.0)
+  lastAccessed      DateTime          @default(now())
+  masteryPercentage Float             @default(0.0)
+  name              String
+  streak            Int               @default(0)
+  studyGuideSummary String
+  updatedAt         DateTime          @updatedAt
+  flashcards        FlashCard[]
+  mcqs              Smart_Study_MCQ[]
+  sources           Source[]
+  user              User              @relation(fields: [userId], references: [id])
+  tests             Test[]
+  todos             ToDo[]
 }
 
-
 model ToDo {
-  id         String    @id @default(uuid())
+  id         String   @id @default(uuid())
   title      String
-  completed  Boolean   @default(false)
-  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
+  completed  Boolean  @default(false)
   studyKitId String
+  studyKit   StudyKit @relation(fields: [studyKitId], references: [id])
 }
 
 model Source {
-  id           String   @id @default(cuid())
-  studyKitId   String
-  studyKit     StudyKit @relation(fields: [studyKitId], references: [id])
-
-  fileUrl      String   // Supabase public URL
-  fileName     String   // Original filename
-  fileType     String   // pdf, docx, txt, csv
-  fileSize     Int?     // size in bytes
-  storagePath  String   // Supabase Storage path (bucket/key)
-
-  processed    Boolean  @default(false) // whether embedded
-  loaderUsed   String?  // which LangChain loader was used
-
-  addedAt      DateTime @default(now())
+  id          String   @id @default(cuid())
+  studyKitId  String
+  fileUrl     String
+  fileName    String
+  fileType    String
+  fileSize    Int?
+  storagePath String
+  processed   Boolean  @default(false)
+  loaderUsed  String?
+  addedAt     DateTime @default(now())
+  studyKit    StudyKit @relation(fields: [studyKitId], references: [id])
 }
 
 model FlashCard {
-  id            String     @id @default(cuid()) // flashcard_item_id
-  studyKitId    String
-  studyKit      StudyKit   @relation(fields: [studyKitId], references: [id])
-
-  front         String
-  back          String
-
-  createdAt     DateTime   @default(now())
+  id         String   @id @default(cuid())
+  studyKitId String
+  back       String
+  createdAt  DateTime @default(now())
+  front      String
+  studyKit   StudyKit @relation(fields: [studyKitId], references: [id])
 }
 
-
 model Smart_Study_MCQ {
-  id         String    @id @default(cuid())
-  studyKitId String
-  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
-
-  questionId    Int        // your custom sequential id (q_1, q_2, etc.)
+  id            String     @id @default(cuid())
+  studyKitId    String
   question      String
-  choices       Json       // [{ key: "A", text: "..." }, {...}]
-  correctOption String     // options keys "A" or "B" or "C"
-  explanation   Json       // ["line1", "line2", ...]
-  difficulty    Difficulty // enum (easy, medium, hard)
-
+  choices       Json
+  correctOption String
   createdAt     DateTime   @default(now())
+  difficulty    Difficulty
+  questionId    Int
+  explanation   Json
+  studyKit      StudyKit   @relation(fields: [studyKitId], references: [id])
 }
 
 model Test {
-  id        String        @id @default(cuid())
-  studyKitId String
-  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
-
-  questionId    String     // e.g., "e1"
-  difficulty    Difficulty
-  question      String
-  choices       Json       // [{ key: "1", text: "..." }, {...}]
+  id            String         @id @default(cuid())
+  studyKitId    String
+  createdAt     DateTime       @default(now())
+  choices       Json
   correctOption String
-  explanation   Json       // ["line1", "line2", ...]
-  createdAt DateTime      @default(now())
-
-  history   Test_History[]
+  difficulty    Difficulty
+  explanation   Json
+  question      String
+  questionId    String
+  studyKit      StudyKit       @relation(fields: [studyKitId], references: [id])
+  history       Test_History[]
 }
 
 model Test_History {
   id          String   @id @default(cuid())
   testId      String
+  testNo      Int
+  difficulty  String
+  duration    Int
+  score       Int
+  userAnswers Json
+  takenAt     DateTime @default(now())
   test        Test     @relation(fields: [testId], references: [id])
 
-  testNo      Int     // Unique test number
-  difficulty  String
-  duration    Int      // in minutes/seconds
-  score       Int
-  userAnswers Json     // stores answers in JSON
-
-  takenAt     DateTime @default(now())
   @@unique([testId, testNo])
 }
-
 
 enum Difficulty {
   easy
