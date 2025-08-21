@@ -21,19 +21,36 @@ model User {
 }
 
 model StudyKit {
-  id         String    @id @default(cuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id])
+  id                  String      @id @default(uuid())
+  name                String
+  lastAccessed        DateTime    @default(now())   // initial creation time
+  masteryPercentage   Float       @default(0.0)     // 0 until user starts
+  streak              Int         @default(0)       // no streak yet
+  kpiScore            Float       @default(0.0)     // neutral baseline
+  attentionSpan       Float       @default(0.0)     // avg minutes/session
+  studyGuideSummary   String      @db.Text          // long text for summaries
 
+  userId              String
+  user                User        @relation(fields: [userId], references: [id])
+  
+  // Relations
+  todos               ToDo[]
+  sources             Source[]
+  mcqs                Smart_Study_MCQ[]
+  flashcards          FlashCard[]
+  tests               Test[]
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+}
+
+
+model ToDo {
+  id         String    @id @default(uuid())
   title      String
-  description String?
-
-  createdAt  DateTime  @default(now())
-
-  sources    Source[]
-  flashcards FlashCard[]
-  mcqs       Smart_Study_MCQ[]
-  tests      Test[]
+  completed  Boolean   @default(false)
+  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
+  studyKitId String
 }
 
 model Source {
@@ -54,23 +71,30 @@ model Source {
 }
 
 model FlashCard {
-  id         String    @id @default(cuid())
-  studyKitId String
-  studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
+  id            String     @id @default(cuid()) // flashcard_item_id
+  studyKitId    String
+  studyKit      StudyKit   @relation(fields: [studyKitId], references: [id])
 
-  question   String
-  answer     String
+  front         String
+  back          String
+
+  createdAt     DateTime   @default(now())
 }
+
 
 model Smart_Study_MCQ {
   id         String    @id @default(cuid())
   studyKitId String
   studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
 
-  question   String
-  options    String[]  // multiple-choice options
-  answer     String    // correct answer
-  explanation String?
+  questionId    Int        // your custom sequential id (q_1, q_2, etc.)
+  question      String
+  choices       Json       // [{ key: "A", text: "..." }, {...}]
+  correctOption String     // options keys "A" or "B" or "C"
+  explanation   Json       // ["line1", "line2", ...]
+  difficulty    Difficulty // enum (easy, medium, hard)
+
+  createdAt     DateTime   @default(now())
 }
 
 model Test {
@@ -78,8 +102,14 @@ model Test {
   studyKitId String
   studyKit   StudyKit  @relation(fields: [studyKitId], references: [id])
 
-  title     String
+  questionId    String     // e.g., "e1"
+  difficulty    Difficulty
+  question      String
+  choices       Json       // [{ key: "1", text: "..." }, {...}]
+  correctOption String
+  explanation   Json       // ["line1", "line2", ...]
   createdAt DateTime      @default(now())
+
   history   Test_History[]
 }
 
@@ -96,4 +126,11 @@ model Test_History {
 
   takenAt     DateTime @default(now())
   @@unique([testId, testNo])
+}
+
+
+enum Difficulty {
+  easy
+  medium
+  hard
 }
