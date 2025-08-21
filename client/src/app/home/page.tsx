@@ -72,7 +72,7 @@ const Index = () => {
       console.warn("localStorage unavailable:", err);
     }
 
-    router.push(`/study/${newKitId}`);
+    router.push(`/study/${newKitId}/home`);
   };
 
   const filteredKits = studyKits.filter(kit =>

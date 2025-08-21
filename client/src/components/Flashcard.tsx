@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 
 interface Flashcard {
@@ -8,43 +9,33 @@ interface Flashcard {
 }
 
 const DUMMY_FLASHCARDS: Flashcard[] = [
-  {
-    id: 1,
-    keyword: "Entropy",
-    explanation: "The total amount of information of the messages emitted from source.",
-  },
-  {
-    id: 2,
-    keyword: "Axis labels",
-    explanation: "Text labels that describe what each axis represents in a visualization.",
-  },
-  {
-    id: 3,
-    keyword: "Data Binding",
-    explanation: "The process of connecting data to visual elements in a chart or graph.",
-  },
-  {
-    id: 4,
-    keyword: "Matplotlib",
-    explanation: "A comprehensive library for creating static, animated, and interactive visualizations in Python.",
-  },
-  {
-    id: 5,
-    keyword: "Pyplot",
-    explanation: "A state-based interface to matplotlib that provides a MATLAB-like way of plotting.",
-  },
+  { id: 1, keyword: "Entropy", explanation: "The total amount of information of the messages emitted from source." },
+  { id: 2, keyword: "Axis labels", explanation: "Text labels that describe what each axis represents in a visualization." },
+  { id: 3, keyword: "Data Binding", explanation: "The process of connecting data to visual elements in a chart or graph." },
+  { id: 4, keyword: "Matplotlib", explanation: "A comprehensive library for creating static, animated, and interactive visualizations in Python." },
+  { id: 5, keyword: "Pyplot", explanation: "A state-based interface to matplotlib that provides a MATLAB-like way of plotting." },
 ];
 
-export function Flashcards() {
+type Category = "learning" | "reviewing" | "known";
+
+export default function Flashcards() {
   const [cards] = useState<Flashcard[]>(DUMMY_FLASHCARDS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  
-  // Progress counters
-  const [learning, setLearning] = useState(0);
-  const [known, setKnown] = useState(0);
-  // ✅ Reviewing starts with total number of cards
-  const [reviewing, setReviewing] = useState(cards.length);
+
+  // Track category assignment for each card
+  const [cardCategories, setCardCategories] = useState<Record<number, Category>>(
+    () => {
+      const initial: Record<number, Category> = {};
+      cards.forEach((c) => (initial[c.id] = "reviewing")); // all start in reviewing
+      return initial;
+    }
+  );
+
+  // Derived counts
+  const learning = Object.values(cardCategories).filter((c) => c === "learning").length;
+  const reviewing = Object.values(cardCategories).filter((c) => c === "reviewing").length;
+  const known = Object.values(cardCategories).filter((c) => c === "known").length;
 
   const currentCard = cards[currentIndex];
 
@@ -52,17 +43,12 @@ export function Flashcards() {
     setIsFlipped(!isFlipped);
   };
 
-  const markCard = (type: 'learning' | 'reviewing' | 'known') => {
-    if (type === 'learning') {
-      setLearning(prev => prev + 1);
-      setReviewing(prev => Math.max(prev - 1, 0)); // ✅ remove from reviewing
-    }
-    if (type === 'reviewing') {
-      // ✅ do nothing, count stays the same
-    }
-    if (type === 'known') {
-      setKnown(prev => prev + 1);
-      setReviewing(prev => Math.max(prev - 1, 0)); // ✅ remove from reviewing
+  const markCard = (type: Category) => {
+    const cardId = currentCard.id;
+
+    // Only update if the category actually changes
+    if (cardCategories[cardId] !== type) {
+      setCardCategories((prev) => ({ ...prev, [cardId]: type }));
     }
 
     // Move to next card
@@ -74,41 +60,41 @@ export function Flashcards() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
-        case 'ArrowDown':
+        case "ArrowDown":
           e.preventDefault();
           handleFlip();
           break;
-        case 'ArrowLeft':
+        case "ArrowLeft":
           e.preventDefault();
-          markCard('learning');
+          markCard("learning");
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           e.preventDefault();
-          markCard('reviewing');
+          markCard("reviewing");
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           e.preventDefault();
-          markCard('known');
+          markCard("known");
           break;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentCard]);
 
   return (
     <div className="h-[calc(100vh-theme(spacing.navbar))] mt-navbar ml-sidebar">
       <div className="p-6">
         {/* Tab Bar */}
         <div className="flex gap-6 mb-8">
-          {['List', 'Deck', 'Games'].map((tab) => (
+          {["List", "Deck", "Games"].map((tab) => (
             <button
               key={tab}
               className={`px-6 py-2 rounded-full transition-smooth ${
-                tab === 'Deck'
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                tab === "Deck"
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               {tab}
@@ -131,55 +117,51 @@ export function Flashcards() {
             <span className="text-green-600 font-medium">Known</span>
           </div>
           <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground">
-            ⚙
+            ⚙️
           </button>
         </div>
 
         {/* Flashcard */}
         <div className="flex flex-col items-center">
           <div
-            className="w-full max-w-2xl h-80 cursor-pointer mb-8 perspective-1000"
+            className="w-full max-w-2xl h-80 cursor-pointer mb-8"
             onClick={handleFlip}
           >
-            <div
-              className={`relative w-full h-full transition-transform duration-500 preserve-3d ${
-                isFlipped ? 'rotate-y-180' : ''
-              }`}
-            >
-              {/* Front of card */}
-              <div className="absolute inset-0 flex items-center justify-center bg-card border rounded-3xl shadow-medium backface-hidden">
-                <h2 className="text-4xl font-bold text-center px-8">
-                  {currentCard.keyword}
-                </h2>
-              </div>
-              
-              {/* Back of card */}
-              <div className="absolute inset-0 flex items-center justify-center bg-muted border rounded-3xl shadow-medium backface-hidden rotate-y-180 px-8">
+            {isFlipped ? (
+              // Back of card → explanation
+              <div className="flex items-center justify-center w-full h-full bg-muted border rounded-3xl shadow-medium px-8">
                 <p className="text-xl text-center text-muted-foreground leading-relaxed">
                   {currentCard.explanation}
                 </p>
               </div>
-            </div>
+            ) : (
+              // Front of card → keyword
+              <div className="flex items-center justify-center w-full h-full bg-card border rounded-3xl shadow-medium">
+                <h2 className="text-4xl font-bold text-center px-8">
+                  {currentCard.keyword}
+                </h2>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-6 mb-6">
             <button
-              onClick={() => markCard('learning')}
+              onClick={() => markCard("learning")}
               className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white text-2xl flex items-center justify-center transition-smooth shadow-medium"
               aria-label="Incorrect"
             >
               ✕
             </button>
             <button
-              onClick={() => markCard('reviewing')}
+              onClick={() => markCard("reviewing")}
               className="w-16 h-16 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white text-2xl flex items-center justify-center transition-smooth shadow-medium"
               aria-label="Not sure"
             >
               😐
             </button>
             <button
-              onClick={() => markCard('known')}
+              onClick={() => markCard("known")}
               className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 text-white text-2xl flex items-center justify-center transition-smooth shadow-medium"
               aria-label="Correct"
             >
@@ -189,7 +171,9 @@ export function Flashcards() {
 
           {/* Progress and Navigation Hints */}
           <div className="flex items-center gap-8 text-sm text-muted-foreground">
-            <span>Card {currentIndex + 1} of {cards.length}</span>
+            <span>
+              Card {currentIndex + 1} of {cards.length}
+            </span>
             <div className="flex items-center gap-4">
               <span>← For incorrect</span>
               <span>↑ For not sure</span>

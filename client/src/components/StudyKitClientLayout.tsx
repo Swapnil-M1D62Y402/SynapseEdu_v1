@@ -136,9 +136,11 @@ export default function StudyKitClientLayout({ studyKitId, children }: Props) {
 
           <nav className="flex flex-col gap-2">
             <Link
-              href={base}
+              href={`${base}/home`}
               className={`px-3 py-2 rounded-md ${
-                pathname === base ? "bg-blue-500 text-white" : "hover:bg-blue-200"
+                 pathname === `${base}/home`
+                  ? "bg-blue-500 text-white"
+                  : "hover:bg-blue-200"
               }`}
             >
               Home

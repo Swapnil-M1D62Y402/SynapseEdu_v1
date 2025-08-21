@@ -1,4 +1,4 @@
-import {Flashcards} from '@/components/Flashcard'
+import Flashcards from '@/components/Flashcard'
 import React from 'react'
 
 const flashcardPage = () => {
