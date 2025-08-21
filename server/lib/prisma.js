@@ -1,30 +1,22 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
 
-let prisma;
-
-// In development, use a global variable so Prisma isn't re-instantiated on every hot reload
-if (process.env.NODE_ENV === 'development') {
-  if (!global.prisma) {
-    global.prisma = new PrismaClient();
-  }
-  prisma = global.prisma;
-} else {
-  // In production, always create a new PrismaClient
-  prisma = new PrismaClient();
+// Avoid multiple instances in dev
+if (!global.prisma) {
+  global.prisma = new PrismaClient()
 }
 
-// Optional: query logging middleware
-prisma.$use(async (params, next) => {
-  const before = Date.now();
-  const result = await next(params);
-  const after = Date.now();
-  console.log(`Query ${params.model}.${params.action} took ${after - before}ms`);
-  return result;
-});
+const prisma = global.prisma
 
-// Graceful shutdown
+// Add logging
+prisma.$on('query', (e) => {
+  console.log(`Query: ${e.query}`)
+  console.log(`Params: ${e.params}`)
+  console.log(`Duration: ${e.duration}ms`)
+})
+
+// Handle clean shutdown
 process.on('beforeExit', async () => {
-  await prisma.$disconnect();
-});
+  await prisma.$disconnect()
+})
 
-export default prisma;
+export default prisma

@@ -6,6 +6,7 @@ import cors from "cors";
 
 // Import routes
 import authRoutes from "./routes/authRoutes.js";
+import studyKitRoutes from "./routes/studyKitRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -36,13 +37,13 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({limit: '10mb'})); // Increase limit for large JSON payloads
+app.use(express.urlencoded({ limit:'10mb', extended: true }));
 app.use(cookieParser());
 
 // Routes
 app.use("/api/auth", authRoutes);
-
+app.use("/api/studyKit", studyKitRoutes);
 
 
 // Root route
