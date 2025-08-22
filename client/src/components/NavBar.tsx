@@ -1,6 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Send, MessageCircle, User, Sun, Moon, Bell, Award, LogOut, Calendar, Hourglass } from "lucide-react";
-import synapseLogoUrl from "@/public/synapseedu_logo.jpeg";
+import synapseLogoUrl from "../public/synapseedu_logo.jpeg";
 import Image from "next/image";
 import {
   DropdownMenu,
@@ -14,41 +16,52 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import Pomodoro from "./Pomodoro";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth"; // <-- import your hook
 
 export default function Navbar() {
   const { setTheme, theme } = useTheme();
-  const [setTimer, setShowTimer] = useState(false);
+  const { logout } = useAuth(); // <-- use the logout from hook
+  const [showTimer, setShowTimer] = useState(false);
 
   return (
     <header className="bg-purple-100 border-b border-border z-10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* ...existing code... */}
+        {/* Logo */}
         <div className="flex items-center space-x-2">
-        <Link href="/home" className="flex items-center space-x-2">
-          <Image src={synapseLogoUrl} alt="SynapseEdu" className="h-8 w-8" />
-          <span className="text-xl font-bold text-gradient">SynapseEdu</span>
-        </Link>
+          <Link href="/home" className="flex items-center space-x-2">
+            <Image src={synapseLogoUrl} alt="SynapseEdu" className="h-8 w-8" />
+            <span className="text-xl font-bold text-gradient">SynapseEdu</span>
+          </Link>
         </div>
 
         {/* Right side actions */}
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm" className="hidden sm:flex">
             <Calendar className="h-4 w-4 mr-2" />
-            Calender
+            Calendar
           </Button>
           <Button variant="outline" size="sm" className="hidden sm:flex">
             <MessageCircle className="h-4 w-4 mr-2" />
             Feedback
           </Button>
-          <Button onClick={() => setShowTimer(true) } variant="outline" size="sm" className="hidden sm:flex" >
+          <Button
+            onClick={() => setShowTimer(true)}
+            variant="outline"
+            size="sm"
+            className="hidden sm:flex"
+          >
             <Hourglass className="h-4 w-4 mr-2" />
             Pomodoro
           </Button>
-          {setTimer && <Pomodoro onClose={() => setShowTimer(false)}/>}
-          
+          {showTimer && <Pomodoro onClose={() => setShowTimer(false)} />}
+
+          {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center p-0">
+              <Button
+                variant="ghost"
+                className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center p-0"
+              >
                 <User className="h-4 w-4 text-white" />
               </Button>
             </DropdownMenuTrigger>
@@ -83,7 +96,12 @@ export default function Navbar() {
                 {theme === "dark" ? "Light Mode" : "Dark Mode"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+
+              {/* 🔴 Use useAuth.logout instead of fetch */}
+              <DropdownMenuItem
+                onClick={logout}
+                className="text-red-600 cursor-pointer"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>

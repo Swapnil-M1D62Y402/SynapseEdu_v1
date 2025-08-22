@@ -1,41 +1,41 @@
 "use client";
+
 import ParticleSystem from "./ParticleSystem";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import {Brain} from "lucide-react";
+import { Brain } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
-export default function Login() {
+export default function Signup() {
   const router = useRouter();
+  const { signup, loading, error } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
 
-  const handleSubmit = async(e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    setLocalError("");
 
-    try{
+    if (!name || !email || !password) {
+      setLocalError("Name, email and password are required.");
+      return;
+    }
+    if (!email.includes("@")) {
+      setLocalError("Please enter a valid email address.");
+      return;
+    }
 
-      if (!email || !password || !name) {
-        setError("Name or Email or password are required.");
-        return;
-      } else 
-      if (!email.includes("@")) {
-        setError("Please enter a valid email address.");
-        return;
-      } else {
-        router.push("/home")
-      }
-    } catch(err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
+    try {
+      await signup(name, email, password); // useAuth stores token & user
+      router.push("/home");
+    } catch (err: any) {
+      setLocalError(err?.response?.data?.message || err?.message || "Signup failed");
     }
   };
 
@@ -50,27 +50,25 @@ export default function Login() {
                 <Brain className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">SynapseEdu</h1>
-              <p className="text-purple-200">"Welcome back!"</p>
+              <p className="text-purple-200">"Create your account"</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-
-                <Input
+              <Input
                 id="name"
                 type="text"
                 placeholder="John Cena"
                 value={name}
-                onChange={(e) => setName(e.target.value )}
+                onChange={(e) => setName(e.target.value)}
                 className="bg-white/10 border-white/20 text-white placeholder:text-purple-200 backdrop-blur-sm"
                 required
-                />
-
+              />
               <Input
                 id="email"
                 type="email"
                 placeholder="you@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value )}
+                onChange={(e) => setEmail(e.target.value)}
                 className="bg-white/10 border-white/20 text-white placeholder:text-purple-200 backdrop-blur-sm"
                 required
               />
@@ -79,24 +77,29 @@ export default function Login() {
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value )}
+                onChange={(e) => setPassword(e.target.value)}
                 className="bg-white/10 border-white/20 text-white placeholder:text-purple-200 backdrop-blur-sm"
                 required
               />
+
+              {(localError || error) && (
+                <p className="text-sm text-red-400">{localError || error}</p>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg transform hover:scale-105 transition-all duration-200"
               >
-                {isLoading ? "Logging in..." : "Login"}
+                {loading ? "Creating account..." : "Sign up"}
               </Button>
             </form>
 
             <div className="text-center mt-6">
               <button
-                onClick={() => router.push("/signup")}
+                onClick={() => router.push("/login")}
                 className="text-purple-200 hover:text-white underline transition-colors"
               >
-                {"Don't have an account? Sign up"}
+                {"Already have an account? Login"}
               </button>
             </div>
 
@@ -109,7 +112,6 @@ export default function Login() {
           </CardContent>
         </Card>
       </div>
-    )
     </div>
   );
 }

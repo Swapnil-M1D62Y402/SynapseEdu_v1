@@ -9,6 +9,7 @@ import { Plus, ChevronDown } from "lucide-react";
 import Navbar from "@/components/NavBar";
 import { v4 as uuidv4 } from "uuid";
 import ParticleSystem from "@/components/ParticleSystem";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface StudyKit {
   id: string;
@@ -89,6 +90,7 @@ const Index = () => {
   }, {} as Record<string, StudyKit[]>);
 
   return (
+    <ProtectedRoute>
     <div className="min-h-screen bg-gradient-to-r from-blue-400 via-gray-50 to-blue-200 ">
       <ParticleSystem />
       <div className="z-10 relative">
@@ -168,6 +170,7 @@ const Index = () => {
         )}
       </main>
     </div>
+    </ProtectedRoute>
   );
 };
 
