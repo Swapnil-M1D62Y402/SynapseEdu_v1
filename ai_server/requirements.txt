@@ -19,3 +19,6 @@ langchain_huggingface
 sentence-transformers
 faiss-cpu
 pypdf
+httpx
+docx2txt
+psycopg2-binary
