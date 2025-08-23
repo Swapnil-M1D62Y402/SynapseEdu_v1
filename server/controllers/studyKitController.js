@@ -6,6 +6,7 @@ import path from 'path';
 import { nanoid } from 'nanoid';
 import { loadFromWeb, loadFromYouTube } from '../utils/loaders.js';
 import jwt from 'jsonwebtoken'; // add at top of file if not present
+import { ensureBucketExists } from '../lib/ensureBucket.js';
 
 const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'sources';
 
@@ -178,6 +179,7 @@ const createStudyKit = asyncHandler(async (req, res) => {
 
 
 const addSources = asyncHandler(async (req, res) => {
+  await ensureBucketExists(bucket);
   try {
     // Log incoming headers/body/files for debugging
     console.log("===== addSources called =====");

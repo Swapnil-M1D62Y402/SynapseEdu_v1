@@ -196,15 +196,32 @@ export const studyKitApi = {
     return res.data;
   },
 
-  uploadSources: async (studyKitId: string, files: File[]) => {
-    const form = new FormData();
-    form.append('studyKitId', studyKitId);
-    files.forEach(f => form.append('files', f));
+  // uploadSources: async (studyKitId: string, files: File[]) => {
+  //   const form = new FormData();
+  //   form.append('studyKitId', studyKitId);
+  //   files.forEach(f => form.append('files', f));
 
-    // CRITICAL FIX: Don't set Content-Type manually for FormData
-    // Let axios set it automatically with the boundary
-    const res = await api.post('/studyKit/source', form);
-    return res.data;
+  //   // CRITICAL FIX: Don't set Content-Type manually for FormData
+  //   // Let axios set it automatically with the boundary
+  //   const res = await api.post('/studyKit/source', form);
+  //   return res.data;
+  // },
+
+  uploadSources: async (studyKitId: string, files: File[]) => {
+  const form = new FormData();
+  form.append('studyKitId', studyKitId);
+  files.forEach((f) => form.append('files', f)); // 'files' matches multer upload.array('files')
+
+  // IMPORTANT: explicitly tell axios to send a multipart request.
+  // If you leave the default Content-Type header set to application/json in the axios instance,
+  // we must override it here so the browser attaches the correct boundary.
+  const res = await api.post('/studyKit/source', form, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  return res.data;
   },
 
   addLinkSource: async (studyKitId: string, url: string, kind = 'link') => {
