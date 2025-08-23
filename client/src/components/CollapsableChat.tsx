@@ -6,7 +6,7 @@ export default function CollapsableChat({isOpen}: {isOpen: boolean}) {
       {isOpen ? (
           <div className="absolute top-0 right-0 h-full w-1/3 min-w-[400px] bg-background border-l border-border shadow-large z-50 flex flex-col">
             <div className="flex justify-between items-center p-4 border-b border-border">
-              <h3 className="font-semibold text-foreground">Study Assistant</h3>
+              <h3 className="font-semibold text-foreground">Askly</h3>
               <Button
                 variant="ghost"
                 size="sm"
