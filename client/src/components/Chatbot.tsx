@@ -44,7 +44,7 @@ export function Chatbot({ messages, onSendMessage, isLoading = false }: ChatbotP
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">AI Study Assistant</h3>
+            <h3 className="font-semibold text-foreground">Askly</h3>
             <p className="text-xs text-muted-foreground">Ready to help with your studies</p>
           </div>
         </div>
@@ -56,7 +56,7 @@ export function Chatbot({ messages, onSendMessage, isLoading = false }: ChatbotP
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <Bot className="w-12 h-12 mx-auto mb-4 text-study-blue" />
-              <p className="text-lg font-medium mb-2">Welcome to StudyAI!</p>
+              <p className="text-lg font-medium mb-2">Hi I am Askly!</p>
               <p className="text-sm">Ask me anything about your study materials.</p>
             </div>
           ) : (
