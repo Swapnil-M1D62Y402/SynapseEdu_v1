@@ -7,6 +7,13 @@ import cors from "cors";
 // Import routes
 import authRoutes from "./routes/authRoutes.js";
 import studyKitRoutes from "./routes/studyKitRoutes.js";
+//import studyRoutes from "./routes/studyRoutes.js"
+import summarizerRoutes from './routes/summarizer.js';
+import flashcardRoutes from './routes/flashcard.js';
+import ragRoutes from './routes/rag.js';
+import mcqRoutes from './routes/mcq.js';
+import ingestionRoutes from './routes/ingestion.js';
+import testRoutes from './routes/test.js';
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +51,13 @@ app.use(cookieParser());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/studyKit", studyKitRoutes);
+//app.use("/api/study", studyRoutes);
+app.use('/api/summarizer', summarizerRoutes);
+app.use('/api/flashcards', flashcardRoutes);
+app.use('/api/rag', ragRoutes);
+app.use('/api/mcq', mcqRoutes);
+app.use('/api/ingestion', ingestionRoutes);
+app.use('/api/tests', testRoutes);
 
 
 // Root route

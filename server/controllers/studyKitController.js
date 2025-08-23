@@ -10,30 +10,71 @@ import { ensureBucketExists } from '../lib/ensureBucket.js';
 
 const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'sources';
 
+// async function uploadTextToStorage(userId, studyKitId, filenameBase, textContent) {
+//   const ext = ".txt";
+//   const storagePath = `${userId}/${studyKitId}/${Date.now()}_${nanoid(6)}_${filenameBase}${ext}`;
+
+//   const { data: uploadData, error: uploadError } = await supabase.storage
+//     .from(bucket)
+//     .upload(storagePath, Buffer.from(textContent, "utf-8"), {
+//       contentType: "text/plain",
+//       upsert: false,
+//     });
+
+//   if (uploadError) throw uploadError;
+
+//   const { data: urlData, error: urlError } = supabase.storage
+//     .from(bucket)
+//     .getPublicUrl(storagePath);
+
+//   if (urlError) throw urlError;
+
+//   return {
+//     storagePath: uploadData?.path || storagePath,
+//     publicUrl: urlData?.publicUrl || null
+//   };
+// }
+
 async function uploadTextToStorage(userId, studyKitId, filenameBase, textContent) {
-  const ext = ".txt";
+  const ext = '.txt';
   const storagePath = `${userId}/${studyKitId}/${Date.now()}_${nanoid(6)}_${filenameBase}${ext}`;
+
+  // Ensure bucket exists (noop if ensureBucketExists is implemented to be idempotent)
+  try {
+    if (typeof ensureBucketExists === 'function') {
+      await ensureBucketExists(bucket);
+    }
+  } catch (err) {
+    // don't crash here — we'll attempt upload and surface the real error if it occurs
+    console.warn('ensureBucketExists failed (continuing):', err?.message || err);
+  }
 
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from(bucket)
-    .upload(storagePath, Buffer.from(textContent, "utf-8"), {
-      contentType: "text/plain",
+    .upload(storagePath, Buffer.from(textContent, 'utf8'), {
+      contentType: 'text/plain',
       upsert: false,
     });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    // normalize error for upstream handling
+    throw new Error(`Supabase upload error: ${uploadError?.message || JSON.stringify(uploadError)}`);
+  }
 
   const { data: urlData, error: urlError } = supabase.storage
     .from(bucket)
     .getPublicUrl(storagePath);
 
-  if (urlError) throw urlError;
+  if (urlError) {
+    throw new Error(`Failed to get public URL: ${urlError?.message || JSON.stringify(urlError)}`);
+  }
 
   return {
     storagePath: uploadData?.path || storagePath,
-    publicUrl: urlData?.publicUrl || null
+    publicUrl: urlData?.publicUrl || null,
   };
 }
+
 
 
 // const createStudyKit = asyncHandler(async(req, res) => {
@@ -306,16 +347,255 @@ const addSources = asyncHandler(async (req, res) => {
 });
 
 
+// const addLinkSource = asyncHandler(async (req, res) => {
+//   try {
+//     const { studyKitId, url, kind } = req.body; // kind optional: 'youtube'|'web'
+//     const userId = req.user.id;
+
+//     if (!studyKitId || !url) {
+//       return res.status(400).json({ success: false, error: "studyKitId and url required" });
+//     }
+
+//     // Attempt extraction
+//     let text = null;
+//     try {
+//       if (kind === 'youtube' || /youtu\.?be/.test(url)) {
+//         text = await loadFromYouTube(url);
+//       } else {
+//         text = await loadFromWeb(url);
+//       }
+//     } catch (err) {
+//       console.warn("Extraction failed:", err?.message || err);
+//       text = null;
+//     }
+
+//     // If we got meaningful text, upload as .txt and create Source row pointing to it
+//     if (text && text.trim().length > 50) {
+//       const filenameBase = (new URL(url).hostname || 'source').replace(/\W+/g, '_').slice(0, 40);
+//       const uploadRes = await uploadTextToStorage(userId, studyKitId, filenameBase, text);
+
+//       const sourceRow = await prisma.source.create({
+//         data: {
+//           studyKitId,
+//           fileUrl: uploadRes.publicUrl,
+//           fileName: `${filenameBase}.txt`,
+//           fileType: 'text',
+//           fileSize: Buffer.byteLength(text, 'utf8'),
+//           storagePath: uploadRes.storagePath,
+//           processed: false
+//         }
+//       });
+
+//       // Fire-and-forget: notify Python to ingest (do not block response)
+//       (async () => {
+//         try {
+//           // create signed url for Python (valid for 1 hour)
+//           const { data: signedData, error: signedErr } = await supabase.storage
+//             .from(bucket)
+//             .createSignedUrl(uploadRes.storagePath, 60 * 60);
+//           if (!signedErr && signedData?.signedUrl) {
+//             await ragIngest({
+//               studyKitId,
+//               sourceId: sourceRow.id,
+//               signedUrl: signedData.signedUrl,
+//               fileType: 'text'
+//             });
+//             // option: update processed=true when ragIngest succeeds (you can do that here)
+//           }
+//         } catch (err) {
+//           console.warn("ragIngest (background) failed:", err?.message || err);
+//         }
+//       })();
+
+//       return res.status(201).json({ success: true, source: sourceRow, extracted: true });
+//     }
+
+//     // Fallback: create a link-only Source row (no text uploaded)
+//     const sourceLinkRow = await prisma.source.create({
+//       data: {
+//         studyKitId,
+//         fileUrl: url,
+//         fileName: url.slice(0, 255),
+//         fileType: 'link',
+//         storagePath: null,
+//         processed: false
+//       }
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       source: sourceLinkRow,
+//       extracted: false,
+//       note: 'No extractable text — stored as link'
+//     });
+
+//   } catch (err) {
+//     console.error("addLinkSource error:", err);
+//     res.status(500).json({ success: false, error: 'Server error', details: err.message });
+//   }
+// });
+
+// const addLinkSource = asyncHandler(async (req, res) => {
+//   try {
+//     const { studyKitId, url, kind } = req.body;
+//     const userId = req.user.id;
+
+//     if (!studyKitId || !url) {
+//       return res.status(400).json({ success: false, error: "studyKitId and url required" });
+//     }
+
+//     // Extract text
+//     let text = null;
+//     try {
+//       if (kind === "youtube" || /youtu\.?be/.test(url)) {
+//         text = await loadFromYouTube(url);
+//       } else {
+//         text = await loadFromWeb(url);
+//       }
+//     } catch (err) {
+//       console.warn("Extraction failed:", err?.message || err);
+//       text = null;
+//     }
+
+//     // If extraction succeeded, save as .txt file
+//     if (text && text.trim().length > 50) {
+//       const filenameBase = (new URL(url).hostname || "source")
+//         .replace(/\W+/g, "_")
+//         .slice(0, 40);
+
+//       const uploadRes = await uploadTextToStorage(userId, studyKitId, filenameBase, text);
+
+//       const sourceRow = await prisma.source.create({
+//         data: {
+//           studyKitId,
+//           fileUrl: uploadRes.publicUrl,
+//           fileName: `${filenameBase}.txt`,
+//           fileType: "text",
+//           fileSize: Buffer.byteLength(text, "utf8"),
+//           storagePath: uploadRes.storagePath,
+//           processed: false,
+//         },
+//       });
+
+//       return res.status(201).json({
+//         success: true,
+//         source: sourceRow,
+//         extracted: true,
+//       });
+//     }
+
+//     // Otherwise, fallback: just store the link
+//     const sourceLinkRow = await prisma.source.create({
+//       data: {
+//         studyKitId,
+//         fileUrl: url,
+//         fileName: url.slice(0, 255),
+//         fileType: "link",
+//         storagePath: null,
+//         processed: false,
+//       },
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       source: sourceLinkRow,
+//       extracted: false,
+//       note: "No extractable text — stored as link only",
+//     });
+//   } catch (err) {
+//     console.error("addLinkSource error:", err);
+//     res.status(500).json({ success: false, error: "Server error", details: err.message });
+//   }
+// });
+
+
+// const addTextSource = asyncHandler(async (req, res) => {
+//   try {
+//     const { studyKitId, text, title } = req.body;
+//     const userId = req.user.id;
+
+//     if (!studyKitId || !text) return res.status(400).json({ success: false, error: 'studyKitId and text required' });
+
+//     const filenameBase = (title || 'pasted_text').replace(/\s+/g, '_').slice(0, 40);
+//     const uploadRes = await uploadTextToStorage(userId, studyKitId, filenameBase, text);
+
+//     const sourceRow = await prisma.source.create({
+//       data: {
+//         studyKitId,
+//         fileUrl: uploadRes.publicUrl,
+//         fileName: `${filenameBase}.txt`,
+//         fileType: 'text',
+//         fileSize: Buffer.byteLength(text, 'utf8'),
+//         storagePath: uploadRes.storagePath,
+//         processed: false
+//       }
+//     });
+
+//     // background ingest
+//     (async () => {
+//       try {
+//         const { data: signedData, error: signedErr } = await supabase.storage
+//           .from(bucket)
+//           .createSignedUrl(uploadRes.storagePath, 60 * 60);
+//         if (!signedErr && signedData?.signedUrl) {
+//           await ragIngest({ studyKitId, sourceId: sourceRow.id, signedUrl: signedData.signedUrl, fileType: 'text' });
+//         }
+//       } catch (err) {
+//         console.warn("ragIngest (background) failed:", err?.message || err);
+//       }
+//     })();
+
+//     res.status(201).json({ success: true, source: sourceRow });
+
+//   } catch (err) {
+//     console.error("addTextSource error:", err);
+//     res.status(500).json({ success: false, error: 'Server error', details: err.message });
+//   }
+// });
+
+
+
+// export async function addTextSource(studyKitId, text, title = "Untitled Text") {
+//   if (!text || typeof text !== "string") {
+//     throw new Error("addTextSource: text must be a non-empty string");
+//   }
+//   if (!studyKitId) {
+//     throw new Error("addTextSource: studyKitId is required");
+//   }
+
+//   // 1. Create source record in DB
+//   const source = await prisma.source.create({
+//     data: {
+//       type: "TEXT",
+//       title,
+//       studyKitId,
+//     },
+//   });
+
+//   // 2. Ingest text 
+//   try {
+//     await ingestText(studyKitId, source.id, text);
+//   } catch (err) {
+//     console.error("❌ RAG ingestion failed:", err);
+//     // Optionally delete the source if ingestion fails
+//     // await prisma.source.delete({ where: { id: source.id } });
+//     throw new Error("RAG ingestion failed, source not added");
+//   }
+
+//   return source;
+// }
+
 const addLinkSource = asyncHandler(async (req, res) => {
   try {
-    const { studyKitId, url, kind } = req.body; // kind optional: 'youtube'|'web'
-    const userId = req.user.id;
+    const { studyKitId, url, kind } = req.body;
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Not authorized' });
 
     if (!studyKitId || !url) {
-      return res.status(400).json({ success: false, error: "studyKitId and url required" });
+      return res.status(400).json({ success: false, error: 'studyKitId and url required' });
     }
 
-    // Attempt extraction
+    // Attempt text extraction using loader.js
     let text = null;
     try {
       if (kind === 'youtube' || /youtu\.?be/.test(url)) {
@@ -324,11 +604,10 @@ const addLinkSource = asyncHandler(async (req, res) => {
         text = await loadFromWeb(url);
       }
     } catch (err) {
-      console.warn("Extraction failed:", err?.message || err);
+      console.warn('Extraction failed:', err?.message || err);
       text = null;
     }
 
-    // If we got meaningful text, upload as .txt and create Source row pointing to it
     if (text && text.trim().length > 50) {
       const filenameBase = (new URL(url).hostname || 'source').replace(/\W+/g, '_').slice(0, 40);
       const uploadRes = await uploadTextToStorage(userId, studyKitId, filenameBase, text);
@@ -341,35 +620,14 @@ const addLinkSource = asyncHandler(async (req, res) => {
           fileType: 'text',
           fileSize: Buffer.byteLength(text, 'utf8'),
           storagePath: uploadRes.storagePath,
-          processed: false
-        }
+          processed: false,
+        },
       });
-
-      // Fire-and-forget: notify Python to ingest (do not block response)
-      (async () => {
-        try {
-          // create signed url for Python (valid for 1 hour)
-          const { data: signedData, error: signedErr } = await supabase.storage
-            .from(bucket)
-            .createSignedUrl(uploadRes.storagePath, 60 * 60);
-          if (!signedErr && signedData?.signedUrl) {
-            await ragIngest({
-              studyKitId,
-              sourceId: sourceRow.id,
-              signedUrl: signedData.signedUrl,
-              fileType: 'text'
-            });
-            // option: update processed=true when ragIngest succeeds (you can do that here)
-          }
-        } catch (err) {
-          console.warn("ragIngest (background) failed:", err?.message || err);
-        }
-      })();
 
       return res.status(201).json({ success: true, source: sourceRow, extracted: true });
     }
 
-    // Fallback: create a link-only Source row (no text uploaded)
+    // fallback: store link-only
     const sourceLinkRow = await prisma.source.create({
       data: {
         studyKitId,
@@ -377,29 +635,37 @@ const addLinkSource = asyncHandler(async (req, res) => {
         fileName: url.slice(0, 255),
         fileType: 'link',
         storagePath: null,
-        processed: false
-      }
+        processed: false,
+      },
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       source: sourceLinkRow,
       extracted: false,
-      note: 'No extractable text — stored as link'
+      note: 'No extractable text — stored as link',
     });
-
   } catch (err) {
-    console.error("addLinkSource error:", err);
-    res.status(500).json({ success: false, error: 'Server error', details: err.message });
+    console.error('addLinkSource error:', err);
+    return res.status(500).json({ success: false, error: 'Server error', details: err?.message ?? String(err) });
   }
 });
 
+/**
+ * addTextSource
+ * - receives { studyKitId, text, title? } in JSON
+ * - uploads the text as .txt to Supabase and creates a Source row
+ * - does NOT call any embedding/ingest pipeline
+ */
 const addTextSource = asyncHandler(async (req, res) => {
   try {
     const { studyKitId, text, title } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Not authorized' });
 
-    if (!studyKitId || !text) return res.status(400).json({ success: false, error: 'studyKitId and text required' });
+    if (!studyKitId || !text || typeof text !== 'string' || text.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'studyKitId and non-empty text required' });
+    }
 
     const filenameBase = (title || 'pasted_text').replace(/\s+/g, '_').slice(0, 40);
     const uploadRes = await uploadTextToStorage(userId, studyKitId, filenameBase, text);
@@ -412,31 +678,15 @@ const addTextSource = asyncHandler(async (req, res) => {
         fileType: 'text',
         fileSize: Buffer.byteLength(text, 'utf8'),
         storagePath: uploadRes.storagePath,
-        processed: false
-      }
+        processed: false,
+      },
     });
 
-    // background ingest
-    (async () => {
-      try {
-        const { data: signedData, error: signedErr } = await supabase.storage
-          .from(bucket)
-          .createSignedUrl(uploadRes.storagePath, 60 * 60);
-        if (!signedErr && signedData?.signedUrl) {
-          await ragIngest({ studyKitId, sourceId: sourceRow.id, signedUrl: signedData.signedUrl, fileType: 'text' });
-        }
-      } catch (err) {
-        console.warn("ragIngest (background) failed:", err?.message || err);
-      }
-    })();
-
-    res.status(201).json({ success: true, source: sourceRow });
-
+    return res.status(201).json({ success: true, source: sourceRow });
   } catch (err) {
-    console.error("addTextSource error:", err);
-    res.status(500).json({ success: false, error: 'Server error', details: err.message });
+    console.error('addTextSource error:', err);
+    return res.status(500).json({ success: false, error: 'Server error', details: err?.message ?? String(err) });
   }
 });
-
 
 export { createStudyKit, addSources, addLinkSource, addTextSource };

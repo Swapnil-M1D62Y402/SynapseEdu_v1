@@ -22,3 +22,4 @@ pypdf
 httpx
 docx2txt
 psycopg2-binary
+chromadb

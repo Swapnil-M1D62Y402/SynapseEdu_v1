@@ -1,11 +1,10 @@
 # app/schemas/generators.py
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class Choice(BaseModel):
     key: str
     text: str
-
 
 class MCQ(BaseModel):
     id: str
@@ -18,11 +17,11 @@ class MCQ(BaseModel):
     tags: List[str]
     confidence: float
 
-
 class MCQResponse(BaseModel):
     mcqs: List[MCQ]
 
 class FlashcardItem(BaseModel):
+    id: str  # Added this field
     front: str
     back: str
 
@@ -32,7 +31,7 @@ class FlashcardsResponse(BaseModel):
 class TestItem(BaseModel):
     question: str
     type: str  # "mcq" / "short_answer" / "true_false"
-    options: List[str] | None = None
+    options: Optional[List[str]] = None  # Changed from List[str] | None
     answer: str
 
 class TestResponse(BaseModel):
@@ -43,4 +42,4 @@ class SummarizeResponse(BaseModel):
 
 class RAGResponse(BaseModel):
     answer: str
-    citations: List[str] | None = None
+    citations: Optional[List[str]] = None  # Changed from List[str] | None

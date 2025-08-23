@@ -25,6 +25,7 @@ import hero_phone_image from "@/public/hero_phone_image.png";
 import hero_laptop_image from "@/public/hero-laptop-mockup.png";
 import Image from "next/image"
 import ParticleSystem from "@/components/ParticleSystem"
+import { FeaturesShowcase } from "@/components/FeaturesShowcase"
 
 
 export default function LandingPage() {
@@ -174,6 +175,8 @@ export default function LandingPage() {
 
       {/* Features Section */}
       <FeaturesSection />
+
+      <FeaturesShowcase />
       
 
       {/* CTA Section */}
