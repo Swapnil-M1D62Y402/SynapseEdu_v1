@@ -1,98 +1,440 @@
+// controllers/studyKitController.js
 import prisma from '../lib/prisma.js';
 import supabase from '../lib/supabase.js';
 import asyncHandler from "express-async-handler";
 import path from 'path';
+import { nanoid } from 'nanoid';
+import { loadFromWeb, loadFromYouTube } from '../utils/loaders.js';
+import jwt from 'jsonwebtoken'; // add at top of file if not present
 
-const createStudyKit = asyncHandler(async(req, res) => {
-    try {
+const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'sources';
 
-        const {name} = req.body;
-        const userId = req.user.id; //from protect middleware
+async function uploadTextToStorage(userId, studyKitId, filenameBase, textContent) {
+  const ext = ".txt";
+  const storagePath = `${userId}/${studyKitId}/${Date.now()}_${nanoid(6)}_${filenameBase}${ext}`;
 
-        const studyKit = await prisma.studyKit.create({
-            data: {
-                name,
-                userId
-            },
-        })
-        
-        res.status(201).json(studyKit);
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(storagePath, Buffer.from(textContent, "utf-8"), {
+      contentType: "text/plain",
+      upsert: false,
+    });
 
-    }catch(err){
-        res.status(500).json({ 
-            success: false,
-            error: 'Not authorized',
-            details: 'Failed to create StudyKit' 
-        });
+  if (uploadError) throw uploadError;
+
+  const { data: urlData, error: urlError } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(storagePath);
+
+  if (urlError) throw urlError;
+
+  return {
+    storagePath: uploadData?.path || storagePath,
+    publicUrl: urlData?.publicUrl || null
+  };
+}
+
+
+// const createStudyKit = asyncHandler(async(req, res) => {
+//   try {
+//     const { name } = req.body;
+//     const userId = req.user.id;
+
+//     const studyKit = await prisma.studyKit.create({
+//       data: { name, userId }
+//     });
+
+//     res.status(201).json(studyKit);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       success: false,
+//       error: 'Server error',
+//       details: err.message
+//     });
+//   }
+// });
+
+const createStudyKit = asyncHandler(async (req, res) => {
+  try {
+    const { name, studyGuideSummary } = req.body;
+
+    // Basic validation
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ success: false, error: "Missing or invalid 'name' in request body" });
     }
-})
 
-const addSources = asyncHandler(async(req, res) => {
-    try {
-        
-        const studyKitId = req.params.id; //from URL param
-        if(!req.file || req.files.length === 0)   
-            return res.status(400).json({
-                success: false,
-                error: 'No file uploaded',
-                details: 'Please upload a file'
-            });
+    // protect middleware should attach req.user
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authorized" });
+    }
 
-        const uploadedSources = [];
-        
-        for(const file of req.files)
-        {
+    // Use empty string if not provided to satisfy non-null DB column
+    const summaryValue = typeof studyGuideSummary === "string" ? studyGuideSummary : "";
 
-            const fileExt = path.extname(file.originalname).toLowerCase();
-            const fileName = `${Date.now()}_${fileExt}`;
-            const bucket = 'sources';
+    const studyKit = await prisma.studyKit.create({
+      data: {
+        name,
+        userId,
+        studyGuideSummary: summaryValue
+      },
+    });
 
-            const {data, error} = await supabase.storage
-                .from(bucket)
-                .upload(fileName, file.buffer,{
-                    contentType: file.mimetype,
-                    upsert: true // Overwrite if file already exists
-                })
-            if(error) {
-                console.error('Supabase upload error:', error);
-                return res.status(500).json({
-                    success: false,
-                    error: 'File upload failed',
-                    details: error.message
-                });
-            }
+    return res.status(201).json(studyKit);
+  } catch (err) {
+    console.error("createStudyKit error:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
+      details: err?.message ?? String(err),
+    });
+  }
+});
 
-            const {publicURL} = supabase.storage.from(bucket).getPublicUrl(fileName);
 
-            // Save source to database
-            const source = await prisma.source.create({
-                data: {
-                    studyKitId,
-                    fileUrl: publicUrl,
-                    fileName: file.originalname,
-                    fileType: fileExt.replace('.', ''),
-                    fileSize: file.size,
-                    storagePath: data.path,
-                },
-            });
-            uploadedSources.push(source);
+// const addSources = asyncHandler(async(req, res) => {
+//   try {
+//     // Expect studyKitId in the form-data body (simpler for frontend)
+//     const studyKitId = req.body.studyKitId;
+//     if (!studyKitId) {
+//       return res.status(400).json({ success: false, error: 'studyKitId required' });
+//     }
+
+//     const files = req.files || [];
+//     if (files.length === 0) {
+//       return res.status(400).json({
+//         success: false,
+//         error: 'No files uploaded',
+//         details: 'Please upload at least one file'
+//       });
+//     }
+
+//     // Map uploads in parallel (robustly)
+//     const uploadPromises = files.map(async (file) => {
+//       const ext = path.extname(file.originalname).toLowerCase();
+//       const filenameOnStorage = `${req.user.id}/${studyKitId}/${Date.now()}_${nanoid(6)}${ext}`;
+
+//       const { data: uploadData, error: uploadError } = await supabase.storage
+//         .from(bucket)
+//         .upload(filenameOnStorage, file.buffer, {
+//           contentType: file.mimetype,
+//           upsert: false
+//         });
+
+//       if (uploadError) throw uploadError;
+
+//       // getPublicUrl returns { data: { publicUrl } } in supabase-js
+//       const { data: urlData, error: urlError } = supabase.storage
+//         .from(bucket)
+//         .getPublicUrl(filenameOnStorage);
+
+//       if (urlError) throw urlError;
+//       const publicUrl = urlData?.publicUrl || null;
+
+//       const sourceRow = await prisma.source.create({
+//         data: {
+//           studyKitId,
+//           fileUrl: publicUrl,
+//           fileName: file.originalname,
+//           fileType: ext.replace('.', ''),
+//           fileSize: file.size,
+//           storagePath: uploadData?.path || filenameOnStorage,
+//           processed: false
+//         }
+//       });
+
+//       return sourceRow;
+//     });
+
+//     const settled = await Promise.allSettled(uploadPromises);
+
+//     const uploadedSources = settled
+//       .filter(s => s.status === 'fulfilled')
+//       .map(s => s.value);
+
+//     const errors = settled
+//       .filter(s => s.status === 'rejected')
+//       .map(s => s.reason?.message || String(s.reason));
+
+//     res.status(201).json({
+//       success: errors.length === 0,
+//       uploadedCount: uploadedSources.length,
+//       uploadedSources,
+//       errors
+//     });
+
+//   } catch (error) {
+//     console.error('addSources error:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: 'Server Error',
+//       details: error.message
+//     });
+//   }
+// });
+
+// controllers/studyKitController.js (replace only addSources with this)
+
+
+const addSources = asyncHandler(async (req, res) => {
+  try {
+    // Log incoming headers/body/files for debugging
+    console.log("===== addSources called =====");
+    console.log("Headers:", {
+      authorization: req.headers.authorization,
+      'content-type': req.headers['content-type'],
+    });
+    // req.body for multipart might be empty depending on multer timing; we'll log keys
+    console.log("Body keys:", Object.keys(req.body || {}));
+    console.log("Files present:", Array.isArray(req.files) ? req.files.length : req.files);
+
+    // If protect middleware isn't being used or req.user undefined, try decode token
+    if (!req.user) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.split(' ')[1];
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          console.log("Decoded token payload:", decoded);
+          // optional: set req.user minimally so later code that uses req.user.id works
+          req.user = { id: decoded.userId };
+        } catch (err) {
+          console.warn("Token verify failed:", err.message);
         }
-        
-        res.status(201).json({
-            success: true,
-            message: 'Source added successfully',
-            source
-        });
-
-    } catch (error) {
-        res.status(500).json({ 
-            success: false,
-            error: 'Server Error',
-            details: 'Failed to create StudyKit' 
-        });
+      } else {
+        console.warn("No req.user and no Bearer token present");
+      }
+    } else {
+      console.log("req.user:", req.user);
     }
-})
+
+    // Now get studyKitId from either form-data or query (robust)
+    let studyKitId = req.body?.studyKitId ?? req.query?.studyKitId ?? req.params?.studyKitId;
+    if (!studyKitId) {
+      console.warn("Missing studyKitId in request (body/query/params)");
+      return res.status(400).json({ success: false, error: 'studyKitId required' });
+    }
+
+    const files = req.files || [];
+    if (files.length === 0) {
+      console.warn("No files attached in request.files");
+      return res.status(400).json({
+        success: false,
+        error: 'No files uploaded',
+        details: 'Please upload at least one file'
+      });
+    }
+
+    // Upload files in parallel (keep try/catch for each)
+    const uploadPromises = files.map(async (file) => {
+      console.log("Uploading file:", file.originalname, "size:", file.size, "mimetype:", file.mimetype);
+      const ext = path.extname(file.originalname).toLowerCase();
+      const userId = req.user?.id ?? 'anonymous';
+      const filenameOnStorage = `${userId}/${studyKitId}/${Date.now()}_${nanoid(6)}${ext}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filenameOnStorage, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("Supabase upload error for", file.originalname, uploadError);
+        throw new Error(`Supabase upload failed: ${uploadError.message || JSON.stringify(uploadError)}`);
+      }
+      console.log("Supabase uploaded. uploadData:", uploadData);
+
+      const { data: urlData, error: urlError } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filenameOnStorage);
+
+      if (urlError) {
+        console.error("Supabase getPublicUrl error:", urlError);
+        throw new Error(`Failed to get public url: ${urlError.message || JSON.stringify(urlError)}`);
+      }
+      const publicUrl = urlData?.publicUrl || null;
+      console.log("Public URL:", publicUrl);
+
+      // Save to DB
+      const sourceRow = await prisma.source.create({
+        data: {
+          studyKitId,
+          fileUrl: publicUrl,
+          fileName: file.originalname,
+          fileType: ext.replace('.', ''),
+          fileSize: file.size,
+          storagePath: uploadData?.path || filenameOnStorage,
+          processed: false
+        }
+      });
+
+      console.log("DB source created:", sourceRow.id);
+      return sourceRow;
+    });
+
+    const settled = await Promise.allSettled(uploadPromises);
+
+    const uploadedSources = settled
+      .filter(s => s.status === 'fulfilled')
+      .map(s => s.value);
+
+    const errors = settled
+      .filter(s => s.status === 'rejected')
+      .map(s => s.reason?.message || String(s.reason));
+
+    console.log("Upload summary: uploadedCount=", uploadedSources.length, "errors:", errors);
+
+    res.status(201).json({
+      success: errors.length === 0,
+      uploadedCount: uploadedSources.length,
+      uploadedSources,
+      errors
+    });
+
+  } catch (error) {
+    console.error('addSources error (catch):', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error',
+      details: error.message
+    });
+  }
+});
 
 
-export {addSources, createStudyKit};
+const addLinkSource = asyncHandler(async (req, res) => {
+  try {
+    const { studyKitId, url, kind } = req.body; // kind optional: 'youtube'|'web'
+    const userId = req.user.id;
 
+    if (!studyKitId || !url) {
+      return res.status(400).json({ success: false, error: "studyKitId and url required" });
+    }
+
+    // Attempt extraction
+    let text = null;
+    try {
+      if (kind === 'youtube' || /youtu\.?be/.test(url)) {
+        text = await loadFromYouTube(url);
+      } else {
+        text = await loadFromWeb(url);
+      }
+    } catch (err) {
+      console.warn("Extraction failed:", err?.message || err);
+      text = null;
+    }
+
+    // If we got meaningful text, upload as .txt and create Source row pointing to it
+    if (text && text.trim().length > 50) {
+      const filenameBase = (new URL(url).hostname || 'source').replace(/\W+/g, '_').slice(0, 40);
+      const uploadRes = await uploadTextToStorage(userId, studyKitId, filenameBase, text);
+
+      const sourceRow = await prisma.source.create({
+        data: {
+          studyKitId,
+          fileUrl: uploadRes.publicUrl,
+          fileName: `${filenameBase}.txt`,
+          fileType: 'text',
+          fileSize: Buffer.byteLength(text, 'utf8'),
+          storagePath: uploadRes.storagePath,
+          processed: false
+        }
+      });
+
+      // Fire-and-forget: notify Python to ingest (do not block response)
+      (async () => {
+        try {
+          // create signed url for Python (valid for 1 hour)
+          const { data: signedData, error: signedErr } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(uploadRes.storagePath, 60 * 60);
+          if (!signedErr && signedData?.signedUrl) {
+            await ragIngest({
+              studyKitId,
+              sourceId: sourceRow.id,
+              signedUrl: signedData.signedUrl,
+              fileType: 'text'
+            });
+            // option: update processed=true when ragIngest succeeds (you can do that here)
+          }
+        } catch (err) {
+          console.warn("ragIngest (background) failed:", err?.message || err);
+        }
+      })();
+
+      return res.status(201).json({ success: true, source: sourceRow, extracted: true });
+    }
+
+    // Fallback: create a link-only Source row (no text uploaded)
+    const sourceLinkRow = await prisma.source.create({
+      data: {
+        studyKitId,
+        fileUrl: url,
+        fileName: url.slice(0, 255),
+        fileType: 'link',
+        storagePath: null,
+        processed: false
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      source: sourceLinkRow,
+      extracted: false,
+      note: 'No extractable text — stored as link'
+    });
+
+  } catch (err) {
+    console.error("addLinkSource error:", err);
+    res.status(500).json({ success: false, error: 'Server error', details: err.message });
+  }
+});
+
+const addTextSource = asyncHandler(async (req, res) => {
+  try {
+    const { studyKitId, text, title } = req.body;
+    const userId = req.user.id;
+
+    if (!studyKitId || !text) return res.status(400).json({ success: false, error: 'studyKitId and text required' });
+
+    const filenameBase = (title || 'pasted_text').replace(/\s+/g, '_').slice(0, 40);
+    const uploadRes = await uploadTextToStorage(userId, studyKitId, filenameBase, text);
+
+    const sourceRow = await prisma.source.create({
+      data: {
+        studyKitId,
+        fileUrl: uploadRes.publicUrl,
+        fileName: `${filenameBase}.txt`,
+        fileType: 'text',
+        fileSize: Buffer.byteLength(text, 'utf8'),
+        storagePath: uploadRes.storagePath,
+        processed: false
+      }
+    });
+
+    // background ingest
+    (async () => {
+      try {
+        const { data: signedData, error: signedErr } = await supabase.storage
+          .from(bucket)
+          .createSignedUrl(uploadRes.storagePath, 60 * 60);
+        if (!signedErr && signedData?.signedUrl) {
+          await ragIngest({ studyKitId, sourceId: sourceRow.id, signedUrl: signedData.signedUrl, fileType: 'text' });
+        }
+      } catch (err) {
+        console.warn("ragIngest (background) failed:", err?.message || err);
+      }
+    })();
+
+    res.status(201).json({ success: true, source: sourceRow });
+
+  } catch (err) {
+    console.error("addTextSource error:", err);
+    res.status(500).json({ success: false, error: 'Server error', details: err.message });
+  }
+});
+
+
+export { createStudyKit, addSources, addLinkSource, addTextSource };

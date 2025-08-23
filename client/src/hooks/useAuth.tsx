@@ -108,32 +108,70 @@ export function useAuth(): UseAuthReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // const login = useCallback(async (email: string, password: string) => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const data = await authApi.login({ email, password });
+  //     // normalize response
+  //     const { token: tk, user: u } = normalizeAuthResponse(data);
+
+  //     if (!tk || !u) {
+  //       throw new Error("Invalid login response from server");
+  //     }
+
+  //     // persist
+  //     localStorage.setItem(AUTH_TOKEN_KEY, tk);
+  //     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(u));
+
+  //     setToken(tk);
+  //     setUser(u);
+  //   } catch (err: any) {
+  //     console.error("login error", err);
+  //     setError(err?.response?.data?.message || err?.message || "Login failed");
+  //     throw err;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
+
   const login = useCallback(async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await authApi.login({ email, password });
-      // normalize response
-      const { token: tk, user: u } = normalizeAuthResponse(data);
+  setLoading(true);
+  setError(null);
+  try {
+    console.log("Attempting login for:", email); // Debug log
+    const data = await authApi.login({ email, password });
+    console.log("Login response:", data); // Debug log
+    
+    // normalize response
+    const { token: tk, user: u } = normalizeAuthResponse(data);
+    console.log("Normalized token:", tk ? "Found" : "Not found"); // Debug log
+    console.log("Normalized user:", u); // Debug log
 
-      if (!tk || !u) {
-        throw new Error("Invalid login response from server");
-      }
-
-      // persist
-      localStorage.setItem(AUTH_TOKEN_KEY, tk);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(u));
-
-      setToken(tk);
-      setUser(u);
-    } catch (err: any) {
-      console.error("login error", err);
-      setError(err?.response?.data?.message || err?.message || "Login failed");
-      throw err;
-    } finally {
-      setLoading(false);
+    if (!tk || !u) {
+      throw new Error("Invalid login response from server");
     }
-  }, []);
+
+    // persist
+    localStorage.setItem(AUTH_TOKEN_KEY, tk);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(u));
+    console.log("Tokens stored in localStorage"); // Debug log
+
+    // Verify storage
+    console.log("Verification - stored token:", localStorage.getItem(AUTH_TOKEN_KEY) ? "Found" : "Not found");
+
+    setToken(tk);
+    setUser(u);
+    console.log("Login successful"); // Debug log
+  } catch (err: any) {
+    console.error("login error", err);
+    console.error("Error response:", err?.response?.data); // Debug log
+    setError(err?.response?.data?.message || err?.message || "Login failed");
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   const signup = useCallback(async (name: string | undefined, email: string, password: string) => {
     setLoading(true);
