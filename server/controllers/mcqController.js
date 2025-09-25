@@ -1,4 +1,4 @@
-const pythonAPI = require('../config/python-api');
+import pythonAPI from '../config/python-api.js';
 
 const mcqController = {
   async createMCQs(req, res, next) {
@@ -40,4 +40,4 @@ const mcqController = {
   }
 };
 
-module.exports = mcqController;
+export default mcqController;

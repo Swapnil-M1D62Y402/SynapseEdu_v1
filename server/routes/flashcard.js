@@ -1,6 +1,6 @@
 // routes/flashcard.js
-const express = require('express');
-const flashcardController = require('../controllers/flashcardController');
+import express from 'express';
+import flashcardController from '../controllers/flashcardController.js';
 
 const router = express.Router();
 

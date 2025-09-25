@@ -1,4 +1,4 @@
-const pythonAPI = require('../config/python-api');
+import pythonAPI from '../config/python-api.js';
 
 const testController = {
   async createTest(req, res, next) {
@@ -36,4 +36,4 @@ const testController = {
   }
 };
 
-module.exports = testController;
+export default testController;

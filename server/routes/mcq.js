@@ -1,6 +1,6 @@
 // routes/mcq.js
-const express = require('express');
-const mcqController = require('../controllers/mcqController');
+import express from 'express';
+import mcqController from '../controllers/mcqController.js';
 
 const router = express.Router();
 

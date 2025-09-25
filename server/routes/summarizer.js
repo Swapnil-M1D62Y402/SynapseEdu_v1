@@ -1,9 +1,9 @@
 // routes/summarizer.js
-const express = require('express');
-const summarizerController = require('../controllers/summarizerController');
+import express from 'express';
+import summarizeController from '../controllers/summarizeController.js';
 
 const router = express.Router();
 
-router.post('/summarize', summarizerController.summarizeText);
+router.post('/summarize', summarizeController.summarizeText);
 
 export default router;

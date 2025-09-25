@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const PYTHON_API_BASE_URL = process.env.PYTHON_API_BASE_URL || 'http://localhost:8008/api';
 
@@ -46,4 +46,4 @@ pythonAPI.interceptors.response.use(
   }
 );
 
-module.exports = pythonAPI;
+export default pythonAPI;

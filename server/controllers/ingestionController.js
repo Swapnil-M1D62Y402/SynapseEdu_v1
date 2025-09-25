@@ -1,5 +1,5 @@
 // controllers/ingestionController.js
-const pythonAPI = require('../config/python-api');
+import pythonAPI from '../config/python-api.js';
 
 const ingestionController = {
   async ingestPendingSources(req, res, next) {
@@ -125,4 +125,4 @@ const ingestionController = {
   }
 };
 
-module.exports = ingestionController;
+export default ingestionController;

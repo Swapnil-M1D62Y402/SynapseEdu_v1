@@ -1,6 +1,6 @@
 // routes/ingestion.js
-const express = require('express');
-const ingestionController = require('../controllers/ingestionController');
+import express from 'express';
+import ingestionController from '../controllers/ingestionController.js';
 
 const router = express.Router();
 

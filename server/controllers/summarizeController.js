@@ -1,4 +1,4 @@
-const pythonAPI = require('../config/python-api');
+import pythonAPI from '../config/python-api.js';
 
 const summarizerController = {
   async summarizeText(req, res, next) {
@@ -27,4 +27,4 @@ const summarizerController = {
   }
 };
 
-module.exports = summarizerController;
+export default summarizerController;

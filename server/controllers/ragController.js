@@ -1,4 +1,4 @@
-const pythonAPI = require('../config/python-api');
+import pythonAPI from '../config/python-api.js';
 
 const ragController = {
   async chatWithRAG(req, res, next) {
@@ -34,4 +34,4 @@ const ragController = {
   }
 };
 
-module.exports = ragController;
+export default ragController;

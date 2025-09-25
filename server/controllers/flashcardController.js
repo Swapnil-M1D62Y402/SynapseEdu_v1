@@ -1,4 +1,4 @@
-const pythonAPI = require('../config/python-api');
+import pythonAPI from '../config/python-api.js';
 
 const flashcardController = {
   async createFlashcards(req, res, next) {
@@ -38,4 +38,4 @@ const flashcardController = {
   }
 };
 
-module.exports = flashcardController;
+export default flashcardController;

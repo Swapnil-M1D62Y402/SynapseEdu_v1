@@ -1,6 +1,6 @@
 // routes/rag.js
-const express = require('express');
-const ragController = require('../controllers/ragController');
+import express from 'express';
+import ragController from '../controllers/ragController.js';
 
 const router = express.Router();
 
